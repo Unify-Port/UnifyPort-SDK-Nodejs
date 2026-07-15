@@ -1,0 +1,39 @@
+{
+  "name": "@unifyport/sdk-node",
+  "version": "0.1.0",
+  "private": true,
+  "description": "面向 Node.js 的 UnifyPort Device API 类型安全 SDK。",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Unify-Port/UnifyPort-SDK-Nodejs.git",
+    "directory": "packages/sdk"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./device": {
+      "types": "./dist/device/index.d.ts",
+      "import": "./dist/device/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "pnpm clean && tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0",
+    "openapi-typescript-helpers": "0.1.0"
+  }
+}

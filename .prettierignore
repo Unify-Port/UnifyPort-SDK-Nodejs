@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+packages/*/src/generated/
+contracts/*.openapi.yaml
+docs/api-coverage.md

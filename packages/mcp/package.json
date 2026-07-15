@@ -1,0 +1,38 @@
+{
+  "name": "@unifyport/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "通过 MCP 暴露 UnifyPort SDK operation 的 stdio Server。",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Unify-Port/UnifyPort-SDK-Nodejs.git",
+    "directory": "packages/mcp"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "bin": {
+    "unifyport-mcp": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "pnpm clean && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "pnpm --filter @unifyport/sdk-node build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@unifyport/sdk-node": "workspace:*",
+    "ajv": "8.20.0"
+  }
+}
