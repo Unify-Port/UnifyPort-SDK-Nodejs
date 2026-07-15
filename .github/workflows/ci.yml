@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       fail-fast: false
+      # pnpm 10 保留对 Node.js 22.12 的支持；升级 pnpm major 前需同步检查最低 Node.js 版本。
       matrix:
         node-version: [22.12.0, 24.x]
 
