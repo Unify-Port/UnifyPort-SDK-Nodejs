@@ -1,6 +1,6 @@
 {
   "name": "@unifyport/sdk-node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "面向 Node.js 的 UnifyPort Device API 类型安全 SDK。",
   "type": "module",

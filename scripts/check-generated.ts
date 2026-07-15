@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { generateArtifacts, ROOT } from "./lib/generator.js";
+import { generateArtifacts, GENERATED_ARTIFACT_DIRECTORIES, ROOT } from "./lib/generator.js";
 
 // 显式保存缺失路径，保证检查模式只报告漂移，不会意外写回生成文件。
 const stale: string[] = [];
@@ -16,12 +16,19 @@ for (const [path, expected] of artifacts) {
   if (actual !== expected) stale.push(path);
 }
 
-// 同时比较生成目录清单，避免已停止生成的旧客户端继续混入构建或发布包。
-const generatedRoot = "packages/sdk/src/generated";
-for (const entry of await readdir(resolve(ROOT, generatedRoot), { recursive: true })) {
-  if (!entry.endsWith(".ts")) continue;
-  const path = `${generatedRoot}/${entry}`;
-  if (!artifacts.has(path)) stale.push(path);
+// 同时比较所有生成目录清单，避免已停止生成的客户端、示例或参考页继续留在公开仓库。
+for (const directory of GENERATED_ARTIFACT_DIRECTORIES) {
+  let entries: string[];
+  try {
+    entries = await readdir(resolve(ROOT, directory.path), { recursive: true });
+  } catch {
+    entries = [];
+  }
+  for (const entry of entries) {
+    if (!entry.endsWith(directory.suffix)) continue;
+    const path = `${directory.path}/${entry}`;
+    if (!artifacts.has(path)) stale.push(path);
+  }
 }
 
 if (stale.length > 0) {

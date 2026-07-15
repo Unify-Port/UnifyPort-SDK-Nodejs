@@ -63,6 +63,7 @@ pnpm generate:check
 生成结果应包含稳定类型和 operation metadata。审查时重点检查：
 
 - operation 是否缺失、重复或被意外重命名；
+- API Reference 是否为每个 operation 生成参数、请求体、响应和可类型检查的示例；
 - required/optional、nullable、union 和 content type 是否正确；
 - error/status 是否被生成器忽略；
 - policy 默认值是否过度开放；
@@ -83,7 +84,9 @@ pnpm generate:check
 - JavaScript 安全整数边界；
 - MCP 在 read/write/destructive/never 四种策略下的可见性。
 
-如 operation 改变架构、安全或使用流程，同步更新 README、相关 docs 和 skills。
+API Reference 和调用示例由生成器同步更新；字段说明或公开示例缺失时，应补入经批准的 OpenAPI
+契约。不要直接编辑 `docs/api-reference/` 或生成的示例校验文件。如 operation 改变架构、安全或使用
+流程，再同步更新 README、非生成 docs 和 skills。
 
 ### 6. 运行完整门禁
 
@@ -108,7 +111,7 @@ pnpm public:check
 7. **secret**：标记敏感输入、一次性输出与日志脱敏要求。
 8. **MCP**：分类为 read、write、destructive 或 never；未知采用 never。
 9. **验证**：覆盖成功、公开错误、空/非 JSON body、timeout/abort 和相关边界。
-10. **文档**：更新 API coverage、架构/安全说明或 skill 中受影响的流程。
+10. **文档**：确认 API coverage、API Reference 与示例自动更新，并维护架构/安全说明或 skill 中受影响的流程。
 
 ## 破坏性变更判断
 

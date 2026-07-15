@@ -1,6 +1,6 @@
 {
   "name": "unifyport-sdk-node-workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "MIT",
   "description": "UnifyPort Node.js SDK、MCP Server 与公开协作 skill 的工作区。",
@@ -15,9 +15,10 @@
   },
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
-    "check": "pnpm public:check && pnpm contracts:lint && pnpm generate:check && pnpm lint && pnpm format:check && pnpm test && pnpm typecheck && pnpm build && pnpm package:check",
+    "check": "pnpm public:check && pnpm contracts:lint && pnpm generate:check && pnpm docs:check && pnpm lint && pnpm format:check && pnpm test && pnpm typecheck && pnpm build && pnpm package:check",
     "clean": "tsx scripts/clean.ts",
     "contracts:lint": "redocly lint contracts/device.openapi.yaml",
+    "docs:check": "tsx scripts/check-docs.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "generate": "tsx scripts/generate.ts",

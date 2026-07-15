@@ -48,9 +48,9 @@ Device client 提供。client 会把 API key 固定在配置的 origin/path 边�
 
 ### 生成 operation 与手写基础设施
 
-operation path、method、请求参数和响应类型应从固定契约生成；传输、错误、认证、重试、分页策略和
-客户端外观由经过测试的基础设施提供。生成文件必须有 generated 标记，并由
-`pnpm generate:check` 验证可复现性。
+operation path、method、请求参数、响应类型、API Reference 和示例类型校验应从固定契约生成；传输、
+错误、认证、重试、分页策略和客户端外观由经过测试的基础设施提供。生成文件必须有 generated
+标记，并由 `pnpm generate:check` 验证可复现性。
 
 公开方法应保持 operationId 稳定。契约中的 operationId 变化属于公开 SDK 命名变化，需要按破坏性
 变更审查，不能依赖生成器静默重命名。

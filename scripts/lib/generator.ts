@@ -1,9 +1,16 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import openapiTS, { astToString, type OpenAPI3 } from "openapi-typescript";
+import { format, resolveConfig } from "prettier";
 import YAML from "yaml";
+
+import {
+  apiReferencePath,
+  generateApiReferenceArtifacts,
+  type ApiReferenceSource
+} from "./api-reference.js";
 
 type JsonPrimitive = boolean | null | number | string;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -75,6 +82,12 @@ interface LocationAccumulator {
 type OpenApiDocument = JsonObject & OpenAPI3;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+// 独占目录由 generate 先清理，避免 tag 或 operation 改名后把旧参考页留在公开仓库。
+const GENERATED_ARTIFACT_DIRECTORIES = [
+  { path: "packages/sdk/src/generated", suffix: ".ts", cleanBeforeWrite: false },
+  { path: "packages/sdk/tests/generated", suffix: ".ts", cleanBeforeWrite: true },
+  { path: "docs/api-reference", suffix: ".md", cleanBeforeWrite: true }
+] as const;
 // 覆盖 OpenAPI Path Item 允许的全部 HTTP method，避免未来新增合法 operation 时被静默漏生成。
 const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"] as const;
 
@@ -748,7 +761,7 @@ function generateCoverageMarkdown(apiResults: readonly ApiGenerationResult[]): s
         policy.secretOutput ? "secret output" : ""
       ].filter(Boolean);
       lines.push(
-        `| ${operation.api} | \`${operation.operationId}\` | ${operation.method.toUpperCase()} | \`${operation.path}\` | explicit | ${policy.mcpExposure} | ${policy.retryable ? "safe" : "never"} | ${reasons.join(", ") || "-"} |`
+        `| ${operation.api} | [\`${operation.operationId}\`](${apiReferencePath(operation)}) | ${operation.method.toUpperCase()} | \`${operation.path}\` | explicit | ${policy.mcpExposure} | ${policy.retryable ? "safe" : "never"} | ${reasons.join(", ") || "-"} |`
       );
     }
   }
@@ -808,6 +821,28 @@ export async function generateArtifacts(): Promise<ReadonlyMap<string, string>> 
 
   const allOperations = apiResults.flatMap((result) => result.operations);
   validatePolicyConfiguration(allOperations);
+  for (const result of apiResults) {
+    const referenceSource = {
+      contract: result.api.contract,
+      clientClassName: result.api.className,
+      document: result.document,
+      operations: result.operations.map((operation) => ({
+        ...operation,
+        policy: defaultPolicy(operation)
+      }))
+    } satisfies ApiReferenceSource;
+    for (const [path, content] of generateApiReferenceArtifacts(referenceSource)) {
+      // 生成的 Markdown 与类型检查 fixture 使用仓库同一份 Prettier 配置，保证 check 可重复。
+      const prettierConfig = await resolveConfig(resolve(ROOT, path));
+      artifacts.set(
+        path,
+        await format(content, {
+          ...(prettierConfig ?? {}),
+          filepath: resolve(ROOT, path)
+        })
+      );
+    }
+  }
   const mcpPackage = parseJsonObject(
     await readFile(resolve(ROOT, "packages/mcp/package.json"), "utf8"),
     "packages/mcp/package.json"
@@ -828,6 +863,11 @@ export async function generateArtifacts(): Promise<ReadonlyMap<string, string>> 
 export async function writeGeneratedArtifacts(
   artifacts: ReadonlyMap<string, string>
 ): Promise<void> {
+  for (const directory of GENERATED_ARTIFACT_DIRECTORIES) {
+    if (directory.cleanBeforeWrite) {
+      await rm(resolve(ROOT, directory.path), { recursive: true, force: true });
+    }
+  }
   for (const [path, content] of artifacts) {
     const absolutePath = resolve(ROOT, path);
     await mkdir(dirname(absolutePath), { recursive: true });
@@ -836,4 +876,4 @@ export async function writeGeneratedArtifacts(
   }
 }
 
-export { ROOT };
+export { GENERATED_ARTIFACT_DIRECTORIES, ROOT };

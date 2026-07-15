@@ -22,8 +22,8 @@ SDK 不会为公开契约没有定义的能力推测请求格式、认证方法�
 - `UnifyPortDeviceClient` 使用 `X-Api-Key` 调用 Device API；
 - API key 只从 client 配置读取，不能由单次 operation input 覆盖。
 
-Device API 中的 `/v1/accounts/...` 是 provider 账号资源，包含账号管理、授权和运行态能力；它们仍属于
-Device API，不代表本 SDK 还包含另一个独立账号服务客户端。
+Device API 中的 `/v1/accounts/...` 是 provider 账号资源，包含账号管理、授权和运行态能力，并由同一个
+`UnifyPortDeviceClient` 提供。
 
 ## 环境要求
 
@@ -43,6 +43,11 @@ pnpm install --frozen-lockfile
 ```bash
 npm install @unifyport/sdk-node
 ```
+
+完整的 client 配置、operation 参数、分页和错误处理示例见
+[SDK 使用说明](packages/sdk/README.md)。
+全部 operation 的独立参数表、返回字段和 TypeScript 示例见
+[Device API Reference](docs/api-reference/README.md)。
 
 然后从 package 根入口导入客户端：
 
@@ -121,6 +126,7 @@ stdio 的 `stdout` 仅用于 JSON-RPC；部署脚本必须把普通日志留在 
 pnpm contracts:lint
 pnpm generate
 pnpm generate:check
+pnpm docs:check
 pnpm public:check
 ```
 
@@ -138,6 +144,7 @@ pnpm public:check
 | `pnpm check`          | 运行完整工程门禁                    |
 | `pnpm public:check`   | 检查公开仓库内容与发布边界          |
 | `pnpm contracts:lint` | 用 Redocly lint Device OpenAPI      |
+| `pnpm docs:check`     | 检查 API Reference 覆盖和文档链接   |
 | `pnpm generate`       | 从公开契约生成类型和 operation 资产 |
 | `pnpm generate:check` | 检查生成物是否可复现且无漂移        |
 | `pnpm lint`           | 运行 ESLint                         |
@@ -176,6 +183,7 @@ unifyport-sdk-node/
 
 ## 设计与安全文档
 
+- [Device API Reference](docs/api-reference/README.md)
 - [架构说明](docs/architecture.md)
 - [安全边界](docs/security.md)
 - [契约维护流程](docs/contract-maintenance.md)
