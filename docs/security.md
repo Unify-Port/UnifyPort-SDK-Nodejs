@@ -110,7 +110,8 @@ stdio 模式下，普通日志写入 `stdout` 会破坏 JSON-RPC 帧。实现必
 
 - 依赖使用 lockfile 固定，升级时审查 changelog、Node engine、ESM/CJS exports 和 transitive diff。
 - `pnpm package:check` 必须检查 tarball 内容、exports 与声明文件；开发 fixture 和本地凭据不得被打包。
-- 包在 license 与发布策略明确前保持 `private: true`。取消 private 属于独立发布决策。
+- `@unifyport/sdk-node` 只有在 license、版本和 registry 策略明确且完整门禁通过后才允许公开发布；
+  `@unifyport/mcp-server` 保持 `private: true`，避免 SDK 发布同时扩大 MCP 的分发范围。
 - 每次公开交付都必须运行 `pnpm public:check`，确认文档、配置和产物没有越过公开边界。
 
 ## 安全评审清单

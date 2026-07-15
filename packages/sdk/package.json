@@ -1,13 +1,17 @@
 {
   "name": "@unifyport/sdk-node",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "description": "面向 Node.js 的 UnifyPort Device API 类型安全 SDK。",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Unify-Port/UnifyPort-SDK-Nodejs.git",
     "directory": "packages/sdk"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "engines": {
     "node": ">=22.12.0"

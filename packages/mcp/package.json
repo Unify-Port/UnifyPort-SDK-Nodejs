@@ -2,6 +2,7 @@
   "name": "@unifyport/mcp-server",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "通过 MCP 暴露 UnifyPort SDK operation 的 stdio Server。",
   "type": "module",
   "repository": {

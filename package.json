@@ -2,6 +2,7 @@
   "name": "unifyport-sdk-node-workspace",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "UnifyPort Node.js SDK、MCP Server 与公开协作 skill 的工作区。",
   "type": "module",
   "repository": {

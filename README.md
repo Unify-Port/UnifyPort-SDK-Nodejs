@@ -3,8 +3,8 @@
 面向 Node.js/TypeScript 的 UnifyPort SDK 工作区，提供类型安全 SDK、受最小权限约束的 stdio MCP
 Server，以及供自动化代理复用的公开 skills。
 
-当前仓库处于发布前阶段：两个 npm package 都保持 `private: true`。在 license、发布渠道和版本策略
-明确前，不应取消 private，也不应把示例理解为已经可以从 npm registry 安装。
+`@unifyport/sdk-node` 采用 MIT 许可证并通过 npm 公开发布；`@unifyport/mcp-server` 仍保持
+`private: true`，在 MCP 的独立发布策略明确前不进入 registry。
 
 ## 能力与边界
 
@@ -38,7 +38,13 @@ pnpm install --frozen-lockfile
 
 ## SDK 快速开始
 
-发布前可通过 pnpm workspace 引用 `@unifyport/sdk-node`：
+从 npm 安装 SDK：
+
+```bash
+npm install @unifyport/sdk-node
+```
+
+然后从 package 根入口导入客户端：
 
 ```ts
 import { UnifyPortDeviceClient } from "@unifyport/sdk-node";
