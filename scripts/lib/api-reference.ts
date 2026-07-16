@@ -1,3 +1,9 @@
+import {
+  addLanguageNavigation,
+  toEnglishApiReferenceSource,
+  translateGeneratedMarkdownToEnglish
+} from "./api-reference-i18n.js";
+
 // API Reference 与类型检查示例共用同一渲染模型，避免文档调用方式与 SDK 签名分别漂移。
 export type OpenApiJsonPrimitive = boolean | null | number | string;
 export type OpenApiJsonValue = OpenApiJsonPrimitive | OpenApiJsonObject | OpenApiJsonValue[];
@@ -929,9 +935,26 @@ export function generateApiReferenceArtifacts(
     examples.set(operation.operationId, buildRequestExample(source.document, operation));
   }
 
-  artifacts.set("docs/api-reference/README.md", indexMarkdown(source));
+  const englishSource = toEnglishApiReferenceSource(source);
+  const chineseIndex = indexMarkdown(source).replace(
+    "(../../contracts/device.openapi.yaml)",
+    "(../../../contracts/device.openapi.yaml)"
+  );
+  artifacts.set(
+    "docs/api-reference/README.md",
+    addLanguageNavigation(
+      translateGeneratedMarkdownToEnglish(indexMarkdown(englishSource)),
+      "README.md",
+      "../zh-CN/api-reference/README.md"
+    )
+  );
+  artifacts.set(
+    "docs/zh-CN/api-reference/README.md",
+    addLanguageNavigation(chineseIndex, "../../api-reference/README.md", "README.md")
+  );
   for (const [tag, operations] of groupedOperations(source)) {
-    const path = `docs/api-reference/${slug(tag)}.md`;
+    const filename = `${slug(tag)}.md`;
+    const path = `docs/api-reference/${filename}`;
     if (paths.has(path)) throw new Error(`API Reference tag slug 重复: ${tag}`);
     paths.add(path);
     for (const operation of operations) {
@@ -941,7 +964,29 @@ export function generateApiReferenceArtifacts(
       }
       anchors.add(anchor);
     }
-    artifacts.set(path, tagMarkdown(source, tag, operations, examples));
+    artifacts.set(
+      path,
+      addLanguageNavigation(
+        translateGeneratedMarkdownToEnglish(
+          tagMarkdown(
+            englishSource,
+            tag,
+            englishSource.operations.filter((operation) => operation.tag === tag),
+            examples
+          )
+        ),
+        filename,
+        `../zh-CN/api-reference/${filename}`
+      )
+    );
+    artifacts.set(
+      `docs/zh-CN/api-reference/${filename}`,
+      addLanguageNavigation(
+        tagMarkdown(source, tag, operations, examples),
+        `../../api-reference/${filename}`,
+        filename
+      )
+    );
   }
   artifacts.set(
     "packages/sdk/tests/generated/api-reference-examples.ts",

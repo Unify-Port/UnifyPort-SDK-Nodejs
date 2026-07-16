@@ -1,14 +1,19 @@
 # `@unifyport/mcp-server`
 
-通过 stdio 暴露经 operation policy 过滤的 UnifyPort Device API tools。默认只读，credential 只能来自
-启动环境；交互式账号授权与 secret 输入/输出 operation 永不进入工具列表。
+[English](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/packages/mcp/README.md) | [简体中文](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/packages/mcp/README.zh-CN.md)
 
-tool 必须对应固定 SDK operation，不能提供任意 method、path、header 或 base URL 的通用请求入口。
-完整配置见 [项目 README](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs#readme)。公开发布前必须运行：
+Exposes UnifyPort Device API tools over stdio after filtering them through the operation policy. The
+server is read-only by default, credentials can come only from the startup environment, and operations
+with interactive account authorization or secret inputs/outputs never appear in the tool list.
+
+Every tool must map to a fixed SDK operation. The server does not provide a generic request entry point
+for arbitrary methods, paths, headers, or base URLs. See the
+[project README](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs#readme) for complete configuration.
+Before any public release, run:
 
 ```bash
 pnpm check
 pnpm public:check
 ```
 
-当前 package 为发布前状态，`private: true`。
+This package is not yet published and remains `private: true`.

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "description": "通过 MCP 暴露 UnifyPort SDK operation 的 stdio Server。",
+  "description": "stdio MCP server exposing policy-approved UnifyPort Device API operations.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -24,7 +24,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md"
   ],
   "scripts": {
     "build": "pnpm clean && tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",

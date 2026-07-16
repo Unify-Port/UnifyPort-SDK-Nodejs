@@ -1,26 +1,27 @@
 ---
 name: unifyport-mcp
-description: 配置、维护或审查 UnifyPort MCP Server 时使用；覆盖 stdio、operation tool 白名单、写/破坏性开关、凭据隔离和敏感 API 禁止暴露规则。
+description: Use when configuring, maintaining, or reviewing the UnifyPort MCP Server; covers stdio, the operation-tool allowlist, write and destructive opt-ins, credential isolation, and rules that prohibit exposing sensitive APIs.
 ---
+
+[English](SKILL.md) | [简体中文](SKILL.zh-CN.md)
 
 # UnifyPort MCP Server
 
-## 适用场景
+## When to use this skill
 
-当任务涉及 `@unifyport/mcp-server` 的安装、配置、tool 增删、权限、stdio 故障或安全审查时使用本
-skill。涉及 SDK operation 或契约变化时，同时使用 `unifyport-node-sdk` skill。
+Use this skill when a task involves installing or configuring `@unifyport/mcp-server`, adding or removing tools, permissions, stdio troubleshooting, or a security review. For SDK operation or contract changes, also use the `unifyport-node-sdk` skill.
 
-## 开始前必须做
+## Required preparation
 
-1. 阅读根 `AGENTS.md`、`docs/architecture.md` 和 `docs/security.md`。
-2. 用 `rg` 确认 operation metadata、当前 tool 列表、CLI 入口和测试。
-3. 检查工作区状态并保留现有修改。
-4. 明确任务是部署配置、SDK operation 变化还是 MCP exposure 变化；三者验证范围不同。
-5. 协议变化必须有经批准的公开 API schema 与 release notes。
+1. Read the root `AGENTS.md`, `docs/architecture.md`, and `docs/security.md`.
+2. Use `rg` to confirm operation metadata, the current tool list, CLI entry points, and tests.
+3. Inspect the worktree and preserve existing changes.
+4. Determine whether the task changes deployment configuration, an SDK operation, or MCP exposure; each requires a different verification scope.
+5. Protocol changes must be backed by an approved public API schema and release notes.
 
-## 启动配置
+## Startup configuration
 
-MCP 只从启动环境读取连接和权限：
+MCP reads connection and permission settings only from its startup environment:
 
 - `UNIFYPORT_DEVICE_API_BASE_URL`
 - `UNIFYPORT_DEVICE_API_KEY`
@@ -28,78 +29,73 @@ MCP 只从启动环境读取连接和权限：
 - `UNIFYPORT_MCP_ENABLE_DESTRUCTIVE`
 - `UNIFYPORT_ALLOW_INSECURE_HTTP`
 
-Device API base URL 和 API key 必须来自启动环境。不要把这些值写进 tool input、配置样例、日志或
-错误输出。生产环境使用 HTTPS；insecure HTTP 只允许显式 opt in 的本地 loopback 场景。
+The Device API base URL and API key must come from the startup environment. Do not include these values in tool input, configuration examples, logs, or error output. Use HTTPS in production. Insecure HTTP is allowed only for an explicitly opted-in local loopback scenario.
 
-Device API 内的 provider 账号资源仍可由 SDK 调用，但含 password、code、session payload 或临时
-secret 的授权 operation 不进入 MCP 工具面。
+Provider account resources within the Device API remain callable through the SDK, but authorization operations containing a password, code, session payload, or temporary secret are not part of the MCP tool surface.
 
-## Tool 暴露策略
+## Tool exposure policy
 
-每个 tool 必须对应一个固定 SDK operation，并使用该 operation 的 JSON Schema 校验输入。禁止添加
-`raw_request`、`call_api`、任意 path/header/base URL 等通用逃生入口。
+Every tool must map to one fixed SDK operation and validate input using that operation's JSON Schema. Do not add generic escape hatches such as `raw_request`, `call_api`, or arbitrary path, header, or base URL input.
 
-分类规则：
+Classification rules:
 
-| 分类        | 可见条件                                                   | 示例边界                       |
-| ----------- | ---------------------------------------------------------- | ------------------------------ |
-| read        | 默认可见                                                   | 无副作用且不返回 secret 的读取 |
-| write       | `UNIFYPORT_MCP_ENABLE_WRITES=true`                         | 非破坏性状态变更               |
-| destructive | writes 与 `UNIFYPORT_MCP_ENABLE_DESTRUCTIVE=true` 同时成立 | 删除、撤销或不可逆操作         |
-| never       | 永不暴露                                                   | secret 输入/输出、未知风险     |
+| Class       | Visibility condition                                               | Example boundary                                  |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| read        | Visible by default                                                 | Read with no side effects or secret output        |
+| write       | `UNIFYPORT_MCP_ENABLE_WRITES=true`                                 | Non-destructive state change                      |
+| destructive | Both writes and `UNIFYPORT_MCP_ENABLE_DESTRUCTIVE=true` are active | Delete, revoke, or another irreversible operation |
+| never       | Never exposed                                                      | Secret input/output or unknown risk               |
 
-配置缺失、空值或无法解析时按 `false`。destructive 不能在 writes 关闭时单独生效。
+Missing, empty, or unparseable settings are treated as `false`. Destructive access cannot be enabled independently when writes are disabled.
 
-以下 operation 无论开关如何都必须归入 `never`：
+The following operations must use `never` regardless of opt-ins:
 
-- 需要人工交互或返回临时 secret 的 provider 账号授权流程；
-- API key create/rotate 等返回一次性明文 secret 的接口；
-- 接收密码、验证码、导入 session 或 signing secret 的接口；
-- 无法证明副作用、重试或数据暴露边界的接口。
+- provider account authorization flows that require human interaction or return a temporary secret;
+- API key create or rotate operations that return a one-time plaintext secret;
+- operations that accept a password, verification code, imported session, or signing secret;
+- operations whose side effects, retry behavior, or data exposure boundary cannot be proven.
 
-## 新增或修改 tool
+## Adding or changing a tool
 
-1. 先在仓库内公开契约中确认 operation 存在且类型生成成功。
-2. 审查 auth、side effect、retry、secret 与 destructive 属性。
-3. 修改 operation policy/生成逻辑，而不是手写一条会与契约漂移的工具。
-4. 确认 tool input 不包含 base URL、认证 header 或其他启动级配置。
-5. 使用 schema 校验 path/query/body；拒绝未声明的认证字段和不安全整数转换。
-6. result 只返回任务需要的数据，过滤 secret，并限制错误/响应体大小。
-7. 测试默认、writes、writes+destructive 三种列表，以及 never operation 在所有组合下都不可见。
-8. 运行 `pnpm generate:check`、`pnpm check` 与 `pnpm public:check`。
+1. Confirm that the operation exists in the in-repository public contract and that its types generate successfully.
+2. Review its authentication, side effects, retry behavior, secrets, and destructive classification.
+3. Change the operation policy or generation logic instead of writing a tool that can drift from the contract.
+4. Confirm that tool input does not contain a base URL, authentication header, or other startup-level setting.
+5. Validate path, query, and body input against the schema. Reject undeclared authentication fields and unsafe integer conversions.
+6. Return only the data needed for the task, filter secrets, and limit error and response body sizes.
+7. Test the default, writes, and writes-plus-destructive lists, and prove that never operations remain hidden in every combination.
+8. Run `pnpm generate:check`, `pnpm check`, and `pnpm public:check`.
 
-无法明确分类时选择 `never`，并在交付中说明需要哪项公开协议说明才能开放。
+If a classification is unclear, choose `never` and explain which public protocol information is required before exposure can be enabled.
 
-## stdio 约束
+## stdio constraints
 
-- `stdout` 只允许 MCP JSON-RPC 帧；所有诊断日志写 `stderr`。
-- 不打印完整 config、headers、request body、response body 或 caught error。
-- tool 执行器必须把 abort/timeout 传到 SDK，并把 SDK error 转换为稳定、脱敏且有界的 MCP error。
-- Server shutdown 时清理 listener/timer；不要让 retry timer 阻止进程退出。
-- MCP host 提供的 cwd 不能改变契约或凭据解析语义。
+- `stdout` may contain only MCP JSON-RPC frames. Write all diagnostic logs to `stderr`.
+- Do not print the complete configuration, headers, request body, response body, or caught error.
+- The tool executor must propagate abort and timeout to the SDK and convert SDK errors into stable, redacted, and bounded MCP errors.
+- Clean up listeners and timers during server shutdown. A retry timer must not prevent the process from exiting.
+- A working directory supplied by the MCP host must not change contract or credential resolution semantics.
 
-当出现“server 立即断开”或 JSON parse 错误时，先检查是否有普通日志、warning 或 stack trace 写到了
-`stdout`，再检查 Node engine、构建产物和环境变量；不要先关闭 schema 或安全校验。
+When a server disconnects immediately or reports a JSON parse error, first check whether an ordinary log, warning, or stack trace was written to `stdout`. Then check the Node.js engine, build artifacts, and environment variables. Do not disable schema or security validation first.
 
-## 验证矩阵
+## Verification matrix
 
-至少覆盖：
+Cover at least:
 
-1. 无权限开关：只有安全 read tools；
-2. 只开 destructive：仍只有安全 read tools；
-3. 只开 writes：read + 非 destructive write；
-4. 同时开 writes/destructive：允许策略明确的 destructive tools；
-5. secret tools 在所有组合下缺失；
-6. 缺少 Device API 配置时启动失败，且错误中不回显配置；
-7. malformed input 在发出 HTTP 请求前被拒绝；
-8. `stdout` 没有非 JSON-RPC 输出，`stderr` 不包含 secret。
+1. No permission opt-ins: only safe read tools.
+2. Destructive only: still only safe read tools.
+3. Writes only: read plus non-destructive write tools.
+4. Writes and destructive: destructive tools explicitly permitted by policy.
+5. Secret tools are absent in every combination.
+6. Startup fails without Device API configuration and does not echo the configuration in the error.
+7. Malformed input is rejected before any HTTP request is sent.
+8. `stdout` contains no non-JSON-RPC output and `stderr` contains no secrets.
 
-完整验证命令：
+Full verification commands:
 
 ```bash
 pnpm check
 pnpm public:check
 ```
 
-交付时报告 tool exposure diff、使用的开关组合、实际验证命令及尚未验证的部署假设。不要在报告中
-回显真实环境变量值。
+In the delivery note, report the tool exposure diff, opt-in combinations tested, commands actually run, and unverified deployment assumptions. Do not echo real environment variable values.

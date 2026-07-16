@@ -1,55 +1,60 @@
 # UnifyPort Node.js SDK
 
-面向 Node.js/TypeScript 的 UnifyPort SDK 工作区，提供类型安全 SDK、受最小权限约束的 stdio MCP
-Server，以及供自动化代理复用的公开 skills。
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-`@unifyport/sdk-node` 采用 MIT 许可证并通过 npm 公开发布；`@unifyport/mcp-server` 仍保持
-`private: true`，在 MCP 的独立发布策略明确前不进入 registry。
+The UnifyPort SDK workspace for Node.js and TypeScript. It provides a type-safe SDK, a least-privilege
+stdio MCP server, and public skills that automation agents can reuse.
 
-## 能力与边界
+`@unifyport/sdk-node` is licensed under MIT and published publicly on npm. `@unifyport/mcp-server`
+remains `private: true` and is not published to a registry until a separate MCP release policy is
+defined.
 
-| 资产                    | 作用                                        | 关键边界                     |
-| ----------------------- | ------------------------------------------- | ---------------------------- |
-| `@unifyport/sdk-node`   | Device API 类型、客户端和传输错误模型       | 认证固定为 `X-Api-Key`       |
-| `@unifyport/mcp-server` | 把策略允许的 SDK operation 暴露为 MCP tools | 默认只读，无通用 raw request |
-| `contracts/`            | 保存经批准的公开 OpenAPI 契约               | 是生成代码的唯一协议输入     |
-| `skills/`               | 维护 SDK/MCP 的公开 agent workflow          | 不替代契约和验证             |
+## Capabilities and boundaries
 
-SDK 不会为公开契约没有定义的能力推测请求格式、认证方法或安全语义。
+| Asset                   | Purpose                                             | Key boundary                                |
+| ----------------------- | --------------------------------------------------- | ------------------------------------------- |
+| `@unifyport/sdk-node`   | Device API types, client, and transport error model | Authentication is always `X-Api-Key`        |
+| `@unifyport/mcp-server` | Exposes policy-approved SDK operations as MCP tools | Read-only by default; no raw request tool   |
+| `contracts/`            | Stores the approved public OpenAPI contract         | The only protocol input for code generation |
+| `skills/`               | Maintains public SDK and MCP agent workflows        | Does not replace the contract or validation |
 
-## Device API 客户端
+The SDK does not infer request formats, authentication methods, or security semantics for capabilities
+that are absent from the public contract.
 
-- `UnifyPortDeviceClient` 使用 `X-Api-Key` 调用 Device API；
-- API key 只从 client 配置读取，不能由单次 operation input 覆盖。
+## Device API client
 
-Device API 中的 `/v1/accounts/...` 是 provider 账号资源，包含账号管理、授权和运行态能力，并由同一个
-`UnifyPortDeviceClient` 提供。
+- `UnifyPortDeviceClient` calls the Device API with `X-Api-Key`.
+- The API key is read only from the client configuration and cannot be overridden by an individual
+  operation input.
 
-## 环境要求
+The Device API routes under `/v1/accounts/...` represent provider account resources. They cover account
+management, authorization, and runtime capabilities, all through the same `UnifyPortDeviceClient`.
+
+## Requirements
 
 - Node.js `>=22.12.0`
-- pnpm `11.7.0`
+- pnpm `10.34.5`
 
-在仓库根目录安装依赖：
+Install dependencies from the repository root:
 
 ```bash
 pnpm install --frozen-lockfile
 ```
 
-## SDK 快速开始
+## SDK quick start
 
-从 npm 安装 SDK：
+Install the SDK from npm:
 
 ```bash
 npm install @unifyport/sdk-node
 ```
 
-完整的 client 配置、operation 参数、分页和错误处理示例见
-[SDK 使用说明](packages/sdk/README.md)。
-全部 operation 的独立参数表、返回字段和 TypeScript 示例见
-[Device API Reference](docs/api-reference/README.md)。
+See the [SDK guide](packages/sdk/README.md) for complete client configuration, operation parameters,
+pagination, and error handling examples. See the
+[Device API Reference](docs/api-reference/README.md) for per-operation parameter tables, response
+fields, and TypeScript examples.
 
-然后从 package 根入口导入客户端：
+Then import the client from the package root:
 
 ```ts
 import { UnifyPortDeviceClient } from "@unifyport/sdk-node";
@@ -62,36 +67,39 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-// 凭据只从运行环境读取，避免进入源码、构建产物或版本控制。
+// Read credentials only from the runtime environment so they never enter source or build artifacts.
 const device = new UnifyPortDeviceClient({
   baseUrl: requiredEnv("UNIFYPORT_DEVICE_API_BASE_URL"),
   apiKey: requiredEnv("UNIFYPORT_DEVICE_API_KEY")
 });
 
-// 方法名保持 OpenAPI operationId，避免在 SDK 与协议之间维护第二套命名。
+// Keep method names aligned with OpenAPI operationId values to avoid a second naming layer.
 const workspace = await device.getWorkspace();
 ```
 
-operation 方法由仓库内 OpenAPI operationId 生成。统一签名为 `(request?, execution?)`：有 required
-path/body 时 `request` 必填，`execution` 可覆盖本次调用的 `timeoutMs`、`retry` 和 `signal`。调用参数、
-响应类型与当前覆盖范围以 package 导出和公开契约为准，不要手拼 path 或认证 header。
+Operation methods are generated from OpenAPI `operationId` values in this repository. Every method uses
+the `(request?, execution?)` signature: `request` is required when the operation has a required path or
+body, while `execution` can override `timeoutMs`, `retry`, and `signal` for that call. Treat the package
+exports and public contract as authoritative for request parameters, response types, and current
+coverage; do not construct paths or authentication headers manually.
 
-client 可通过 `maxResponseBytes` 收紧 wire body 与整数规范化后 JSON 的共同上限；默认上限用于防止异常
-响应或短 exponent 放大耗尽 Node.js 进程内存。
-仓库源码、配置和维护脚本统一使用 TypeScript，不接受 `.mjs` 文件。
+Use `maxResponseBytes` to tighten the shared limit applied to the wire body and the JSON produced after
+integer normalization. The default limit protects the Node.js process from unusually large responses
+and compact exponent notation that expands dramatically. Repository source, configuration, and
+maintenance scripts use TypeScript; `.mjs` files are not accepted.
 
-默认只允许 HTTPS。开发环境如确实需要 loopback HTTP，必须通过 client 配置显式 opt in；生产环境
-不应开启该例外。
+HTTPS is required by default. A development environment that genuinely needs loopback HTTP must opt in
+explicitly through the client configuration. Do not enable this exception in production.
 
-## MCP 快速开始
+## MCP quick start
 
-先构建工作区：
+Build the workspace first:
 
 ```bash
 pnpm build
 ```
 
-然后由 MCP host 以 stdio 启动：
+Then start the stdio server from an MCP host:
 
 ```bash
 UNIFYPORT_DEVICE_API_BASE_URL="https://device.example.com" \
@@ -99,28 +107,30 @@ UNIFYPORT_DEVICE_API_KEY="<secret>" \
 node packages/mcp/dist/cli.js
 ```
 
-连接与权限配置：
+Connection and permission settings:
 
-| 环境变量                           | 含义                                             | 默认值  |
-| ---------------------------------- | ------------------------------------------------ | ------- |
-| `UNIFYPORT_DEVICE_API_BASE_URL`    | Device API base URL                              | 未配置  |
-| `UNIFYPORT_DEVICE_API_KEY`         | `X-Api-Key` 值                                   | 未配置  |
-| `UNIFYPORT_MCP_ENABLE_WRITES`      | 显式设置 `true` 才暴露允许的非破坏性写 tools     | `false` |
-| `UNIFYPORT_MCP_ENABLE_DESTRUCTIVE` | 与 writes 同时为 `true` 才暴露允许的破坏性 tools | `false` |
-| `UNIFYPORT_ALLOW_INSECURE_HTTP`    | 显式设置 `true` 才允许本地 HTTP 例外             | `false` |
+| Environment variable               | Meaning                                                            | Default        |
+| ---------------------------------- | ------------------------------------------------------------------ | -------------- |
+| `UNIFYPORT_DEVICE_API_BASE_URL`    | Device API base URL                                                | Not configured |
+| `UNIFYPORT_DEVICE_API_KEY`         | Value sent as `X-Api-Key`                                          | Not configured |
+| `UNIFYPORT_MCP_ENABLE_WRITES`      | Exposes approved non-destructive write tools only when `true`      | `false`        |
+| `UNIFYPORT_MCP_ENABLE_DESTRUCTIVE` | Exposes approved destructive tools when this and writes are `true` | `false`        |
+| `UNIFYPORT_ALLOW_INSECURE_HTTP`    | Allows the local HTTP exception only when explicitly `true`        | `false`        |
 
-MCP 默认只读。secret 输入、一次性 secret 输出和未明确分类的 operation 永不暴露，
-即使写/破坏性开关都已开启。base URL 和 API key 只能从进程启动环境提供，不是 tool input。
-stdio 的 `stdout` 仅用于 JSON-RPC；部署脚本必须把普通日志留在 `stderr`。
+The MCP server is read-only by default. Operations with secret inputs, one-time secret outputs, or no
+explicit classification are never exposed, even when the write and destructive switches are both
+enabled. The base URL and API key can be provided only through the process startup environment; they are
+not tool inputs. For stdio, `stdout` is reserved for JSON-RPC, so deployment scripts must send ordinary
+logs to `stderr`.
 
-## 公开契约维护
+## Maintaining the public contract
 
-代码生成只读取本仓库中的一份公开契约：
+Code generation reads exactly one public contract from this repository:
 
 - `contracts/device.openapi.yaml`
 
-契约变更必须基于经批准的公开 API schema 和 release notes。不要根据未发布实现或观察结果补写
-协议。修改契约后运行：
+Contract changes must be based on approved public API schemas and release notes. Do not add protocol
+details based on unpublished implementations or observations. After changing the contract, run:
 
 ```bash
 pnpm contracts:lint
@@ -130,66 +140,69 @@ pnpm docs:check
 pnpm public:check
 ```
 
-任何 generated 文件都不应手改；应修改契约、operation policy 或 generator 后重新生成。完整流程见
-[契约维护说明](docs/contract-maintenance.md)。
+Never edit generated files directly. Update the contract, operation policy, or generator and regenerate
+instead. See [Maintaining the public contract](docs/contract-maintenance.md) for the complete workflow.
 
-## 常用命令
+## Commands
 
-所有命令都从根 `package.json` 执行：
+Run all commands from the root `package.json`:
 
-| 命令                  | 作用                                |
-| --------------------- | ----------------------------------- |
-| `pnpm build`          | 按 workspace 顺序构建 package       |
-| `pnpm clean`          | 清理 coverage 与 package 构建产物   |
-| `pnpm check`          | 运行完整工程门禁                    |
-| `pnpm public:check`   | 检查公开仓库内容与发布边界          |
-| `pnpm contracts:lint` | 用 Redocly lint Device OpenAPI      |
-| `pnpm docs:check`     | 检查 API Reference 覆盖和文档链接   |
-| `pnpm generate`       | 从公开契约生成类型和 operation 资产 |
-| `pnpm generate:check` | 检查生成物是否可复现且无漂移        |
-| `pnpm lint`           | 运行 ESLint                         |
-| `pnpm format:check`   | 只检查格式                          |
-| `pnpm test`           | 运行 Vitest 与 coverage             |
-| `pnpm typecheck`      | 对所有 package 做无输出类型检查     |
-| `pnpm package:check`  | 检查 tarball、exports 与声明文件    |
+| Command               | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| `pnpm build`          | Builds packages in workspace order                      |
+| `pnpm clean`          | Removes coverage and package build artifacts            |
+| `pnpm check`          | Runs the complete engineering quality gate              |
+| `pnpm public:check`   | Checks public repository content and release boundaries |
+| `pnpm contracts:lint` | Lints the Device OpenAPI contract with Redocly          |
+| `pnpm docs:check`     | Checks API Reference coverage and documentation links   |
+| `pnpm generate`       | Generates types and operation assets from the contract  |
+| `pnpm generate:check` | Verifies generated files are reproducible and current   |
+| `pnpm lint`           | Runs ESLint                                             |
+| `pnpm format:check`   | Checks formatting without modifying files               |
+| `pnpm test`           | Runs Vitest with coverage                               |
+| `pnpm typecheck`      | Type-checks every package without emitting files        |
+| `pnpm package:check`  | Validates tarballs, exports, and declaration files      |
 
-完整工程验收：
+Run the complete project validation with:
 
 ```bash
 pnpm check
 pnpm public:check
 ```
 
-`pnpm public:check` 是公开交付的独立强制门禁；即使 `pnpm check` 通过，也不能跳过它。
+`pnpm public:check` is an independent, mandatory gate for public delivery. Do not skip it even when
+`pnpm check` passes.
 
-`pnpm lint` 与 `pnpm test` 都会先 clean build SDK。MCP 源码、测试和 CLI 子进程按真实 package
-exports 解析 SDK，这一步保证 fresh checkout 不依赖本地残留的 `dist`。
+Both `pnpm lint` and `pnpm test` perform a clean SDK build first. MCP source, tests, and CLI subprocesses
+resolve the SDK through its real package exports so a fresh checkout never depends on a stale local
+`dist`.
 
-## 目录
+## Repository structure
 
 ```text
 unifyport-sdk-node/
-├── contracts/              # 经批准的公开 OpenAPI 契约
-├── docs/                   # 架构、安全和契约维护说明
+├── contracts/              # Approved public OpenAPI contract
+├── docs/                   # Architecture, security, and contract maintenance guides
 ├── packages/
 │   ├── sdk/                # @unifyport/sdk-node
 │   └── mcp/                # @unifyport/mcp-server
-├── scripts/                # 生成与质量检查
+├── scripts/                # Generation and quality checks
 ├── skills/
-│   ├── unifyport-node-sdk/ # SDK 维护/使用 skill
-│   └── unifyport-mcp/      # MCP 配置/安全 skill
-└── AGENTS.md               # 仓库级协作约束
+│   ├── unifyport-node-sdk/ # SDK maintenance and usage skill
+│   └── unifyport-mcp/      # MCP configuration and security skill
+└── AGENTS.md               # Repository collaboration rules
 ```
 
-## 设计与安全文档
+## Design and security documentation
 
 - [Device API Reference](docs/api-reference/README.md)
-- [架构说明](docs/architecture.md)
-- [安全边界](docs/security.md)
-- [契约维护流程](docs/contract-maintenance.md)
-- [验收报告](docs/acceptance-report.md)
+- [Architecture](docs/architecture.md)
+- [Security boundaries](docs/security.md)
+- [Contract maintenance](docs/contract-maintenance.md)
+- [Acceptance report](docs/acceptance-report.md)
 - [SDK skill](skills/unifyport-node-sdk/SKILL.md)
 - [MCP skill](skills/unifyport-mcp/SKILL.md)
 
-新增 API 前先完成认证、副作用、retry、secret、destructive、JavaScript `uint64` 与 MCP
-exposure 分类。无法证明安全时，SDK 不自动重试，MCP 采用不暴露的保守默认值。
+Before adding an API, classify its authentication, side effects, retry behavior, secret handling,
+destructive behavior, JavaScript `uint64` handling, and MCP exposure. When safety cannot be demonstrated,
+the SDK does not retry automatically and the MCP server defaults to not exposing the operation.

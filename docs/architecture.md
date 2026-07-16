@@ -1,17 +1,18 @@
-# 架构说明
+# Architecture
 
-## 目标与范围
+[English](architecture.md) | [简体中文](zh-CN/architecture.md)
 
-本工作区把 Device API 的公开 HTTP 契约转换成 Node.js/TypeScript 可维护资产：
+## Goals and Scope
 
-- `@unifyport/sdk-node`：面向应用代码的类型安全 SDK；
-- `@unifyport/mcp-server`：在更严格的安全策略下，把允许的 SDK operation 暴露为 MCP tools；
-- `skills/`：让自动化代理按同一套契约、生成和安全规则维护或使用 SDK。
+This workspace turns the public HTTP contract of the Device API into maintainable Node.js and TypeScript assets:
 
-公开契约没有定义的能力不进入 SDK。这个限制让公开类型、传输语义和安全策略始终能回到经批准的
-API schema 与 release notes。
+- `@unifyport/sdk-node`: a type-safe SDK for application code;
+- `@unifyport/mcp-server`: an MCP server that exposes approved SDK operations as tools under stricter security policies;
+- `skills/`: reusable instructions that keep automated maintenance and SDK usage aligned with the same contract, generation, and security rules.
 
-## 总体分层
+A capability that is not defined by the public contract does not enter the SDK. This constraint keeps public types, transport semantics, and security policies traceable to an approved API schema and release notes.
+
+## Layered Design
 
 ```mermaid
 flowchart TD
@@ -23,115 +24,92 @@ flowchart TD
   P --> MCP["@unifyport/mcp-server stdio"]
 ```
 
-每一层只有一个职责：契约描述 wire format，生成层消除手写 operation 漂移，SDK 处理传输与错误
-语义，MCP 再施加模型调用所需的最小权限。MCP 不直接绕过 SDK 发 HTTP 请求。
+Each layer has one responsibility. The contract describes the wire format, generation removes hand-written operation drift, the SDK implements transport and error semantics, and MCP applies the least privilege required for model calls. MCP never bypasses the SDK to send HTTP requests directly.
 
-## 契约治理
+## Contract Governance
 
-`contracts/device.openapi.yaml` 是代码生成的唯一协议输入。契约必须来自经批准的公开 API schema，
-并结合 release notes 审查兼容性、安全和版本影响。
+`contracts/device.openapi.yaml` is the only protocol input to code generation. The contract must come from an approved public API schema and be reviewed with release notes for compatibility, security, and version impact.
 
-契约文件不能长期保留只服务于 SDK 的 wire protocol 补丁。若公开说明不完整，应先完成协议确认，
-再更新契约；生成成功只证明结构可处理，不证明协议语义正确。
+The contract must not retain SDK-only wire protocol patches. If public documentation is incomplete, confirm the protocol first and then update the contract. Successful generation proves only that the structure can be processed; it does not prove that the protocol semantics are correct.
 
-## SDK 结构
+## SDK Structure
 
-### 单一 Device API 客户端
+### One Device API Client
 
-公开入口提供：
+The public entry point provides:
 
-- `UnifyPortDeviceClient` / `DeviceClientConfig`：通过 `X-Api-Key` 调用 Device API。
+- `UnifyPortDeviceClient` / `DeviceClientConfig`: calls the Device API with `X-Api-Key`.
 
-Device API 内的 `/v1/accounts/...` 是 provider 账号资源，包含账号管理、授权和运行态能力，仍由同一
-Device client 提供。client 会把 API key 固定在配置的 origin/path 边界，避免认证材料被调用参数覆盖
-或发送到错误地址。
+Device API paths under `/v1/accounts/...` represent provider account resources, including account management, authorization, and runtime capabilities. They remain part of the same Device client. The client restricts the API key to the configured origin and path boundary so that operation input cannot override credentials or send them to the wrong destination.
 
-### 生成 operation 与手写基础设施
+### Generated Operations and Hand-Written Infrastructure
 
-operation path、method、请求参数、响应类型、API Reference 和示例类型校验应从固定契约生成；传输、
-错误、认证、重试、分页策略和客户端外观由经过测试的基础设施提供。生成文件必须有 generated
-标记，并由 `pnpm generate:check` 验证可复现性。
+Operation paths, methods, request parameters, response types, API Reference pages, and example type checks are generated from the pinned contract. Tested infrastructure provides transport, errors, authentication, retry, pagination policy, and the public client facade. Generated files carry a generated marker and `pnpm generate:check` verifies reproducibility.
 
-公开方法应保持 operationId 稳定。契约中的 operationId 变化属于公开 SDK 命名变化，需要按破坏性
-变更审查，不能依赖生成器静默重命名。
+Public methods keep stable `operationId` values. Changing an `operationId` changes the public SDK method name and therefore requires breaking-change review; the generator must not silently rename it.
 
-### 请求与响应
+### Requests and Responses
 
-一次调用的逻辑顺序是：
+Each call follows this logical sequence:
 
-1. 校验 base URL 与请求输入；
-2. 由客户端注入认证，拒绝单次请求覆盖认证 header；
-3. 合并 timeout 与调用方 `AbortSignal`；
-4. 仅按 operation 策略执行安全重试；
-5. 解析成功或标准/非标准错误体；
-6. 返回类型化数据与必要的响应元数据，或抛出统一 SDK 错误。
+1. Validate the base URL and request input.
+2. Inject authentication from client configuration and reject per-request authentication overrides.
+3. Combine the timeout with the caller's `AbortSignal`.
+4. Retry only when the operation policy explicitly permits it.
+5. Parse a successful response or a standard/non-standard error body.
+6. Return typed data and required response metadata, or throw a consistent SDK error.
 
-成功结果保留 HTTP status、request ID 和底层 `Response`，便于直接调用方处理正常 header。公开错误只
-保留筛选后的 status/code/request ID，不保存原始 `Response`、body、header 或 cause。错误解析必须
-容忍空 body、非 JSON body 以及不完整的错误 envelope；解析失败不能掩盖原始 HTTP status。
+A successful result retains the HTTP status, request ID, and underlying `Response`, allowing the direct caller to inspect normal response headers. A public error retains only filtered status, code, and request ID values; it does not retain the raw `Response`, body, headers, or cause. Error parsing tolerates an empty body, a non-JSON body, and an incomplete error envelope. A parsing failure must not hide the original HTTP status.
 
-### 重试与超时
+### Retry and Timeout
 
-默认重试只适用于策略明确允许的安全读取，并限制在网络失败或临时状态（例如 `408`、`429`、
-`502`、`503`、`504`）。退避应尊重合法的 `Retry-After`，其余情况使用带上限的 jitter，避免多个
-调用方同步重试放大故障。
+Automatic retry applies only to explicitly approved safe reads and is limited to network failures or temporary statuses such as `408`, `429`, `502`, `503`, and `504`. Backoff honors a valid `Retry-After`; otherwise it uses capped jitter so that concurrent callers do not amplify an outage with synchronized retries.
 
-普通写操作、没有幂等保证的创建/轮换以及提交账号授权验证码/密码/session 等行为不能自动重试。
-即使 HTTP method 是 `GET`，也必须以 operation 策略而非 method 猜测副作用。
+Normal writes, creates or rotations without idempotency guarantees, and account authorization submissions containing a verification code, password, or session payload are not retried automatically. Even when the HTTP method is `GET`, side effects must be determined by operation policy rather than inferred from the method.
 
-### JavaScript 整数边界
+### JavaScript Integer Boundaries
 
-`uint64` 可以超过 `Number.MAX_SAFE_INTEGER`。ID、cursor 或计数值如果没有公开的安全范围保证，契约
-与 SDK 必须把它们保留为字符串，或提供不会丢精度的显式表示。禁止在通用解析层把数字字符串自动
-转换成 `number`。
+A `uint64` can exceed `Number.MAX_SAFE_INTEGER`. If the public contract does not guarantee a safe range, IDs, cursors, and counters remain strings or use another explicit lossless representation. The general response parser must not convert numeric strings to `number` automatically.
 
-### 分页
+### Pagination
 
-cursor 分页 helper 必须具有最大页数、重复 cursor 检测和 abort 支持。helper 只负责安全迭代，不应
-隐藏业务筛选参数，也不应在调用方取消后继续预取。
+The cursor pagination helper enforces a maximum page count, detects repeated cursors, and supports abort. It performs safe iteration only: it does not hide business filters or continue prefetching after cancellation.
 
-## MCP 结构
+## MCP Structure
 
-MCP registry 从生成的 operation metadata 建立，每个 tool 对应一个固定 operation。不存在可接收任意
-method、path、base URL 或认证 header 的通用工具。
+The MCP registry is built from generated operation metadata, and each tool maps to one fixed operation. There is no generic tool that accepts an arbitrary method, path, base URL, or authentication header.
 
-operation policy 至少包含：
+Each operation policy includes at least:
 
-- `mutability`: `read` / `write` / `destructive`；
-- `retryable`；
-- `secretInput` / `secretOutput`；
-- `mcpExposure`: `read` / `write` / `destructive` / `never`。
+- `mutability`: `read` / `write` / `destructive`;
+- `retryable`;
+- `secretInput` / `secretOutput`;
+- `mcpExposure`: `read` / `write` / `destructive` / `never`.
 
-默认只暴露安全读取；write 和 destructive 分别需要显式开关。含 secret 或未知风险的 operation 使用
-`never`。这些分类由生成 metadata 与 MCP registry 共用，避免文档、SDK 和工具列表
-出现三套判断。
+Only safe reads are exposed by default. Write and destructive operations require separate explicit switches. Operations containing secrets or unknown risks use `never`. Generated metadata and the MCP registry share these classifications so that documentation, the SDK, and the tool list do not maintain three competing decisions.
 
-MCP Server 使用 stdio transport。`stdout` 仅承载 JSON-RPC，日志写入 `stderr`。base URL 与凭据只在
-进程启动时配置，不进入 tool schema，也不能由模型覆盖。
+The MCP server uses stdio transport. `stdout` carries JSON-RPC only, and logs go to `stderr`. The base URL and credentials are configured only at process startup. They do not enter a tool schema and cannot be overridden by the model.
 
-## 包与发布边界
+## Package and Release Boundaries
 
-工作区使用两个 package：
+The workspace contains two packages:
 
-- `@unifyport/sdk-node`：可独立用于 Node.js 应用；
-- `@unifyport/mcp-server`：依赖 SDK，仅负责策略过滤、schema 验证和 MCP 协议适配。
+- `@unifyport/sdk-node`: the public npm package for Node.js applications;
+- `@unifyport/mcp-server`: a private package that depends on the SDK and provides policy filtering, schema validation, and MCP protocol adaptation.
 
-发布包只包含 `dist`、package metadata 和最小 README。源码、开发配置、凭据与临时产物不能进入
-tarball。构建后使用 `pnpm package:check` 验证 exports、声明文件和可执行权限。
+A package tarball contains only `dist`, package metadata, and the English and Simplified Chinese README files. Source files, development configuration, credentials, and temporary artifacts must not enter the tarball. After building, `pnpm package:check` validates exports, declaration files, executable permissions, and package contents.
 
-公开交付必须额外运行 `pnpm public:check`。该门禁用于确认公开内容、契约路径和发布边界，不能由
-构建成功或单元测试替代。
+Every public delivery also runs `pnpm public:check`. This gate verifies public content, contract paths, and release boundaries; a successful build or unit test cannot replace it.
 
-## 扩展原则
+## Extension Workflow
 
-新增 API 的顺序是：
+Add an API in this order:
 
-1. 确认经批准的公开 API schema 与 release notes；
-2. 更新仓库内契约并运行 lint；
-3. 为 operation 明确 auth、副作用、retry、secret、destructive 与 MCP 分类；
-4. 重新生成类型、客户端方法与 tool metadata；
-5. 添加边界测试和文档；
-6. 运行 `pnpm check`、`pnpm generate:check` 与 `pnpm public:check`。
+1. Confirm the approved public API schema and release notes.
+2. Update the repository contract and run its lint gate.
+3. Classify authentication, side effects, retry, secrets, destructive behavior, and MCP exposure for the operation.
+4. Regenerate types, client methods, documentation, and tool metadata.
+5. Add boundary tests and documentation.
+6. Run `pnpm check`, `pnpm generate:check`, and `pnpm public:check`.
 
-未知能力先保持不支持。forward-compatible 的核心是确定性契约和保守安全默认值，而不是提供可绕过
-策略的 raw API 入口。
+Unknown capabilities remain unsupported. Forward compatibility comes from a deterministic contract and conservative security defaults, not from a raw API escape hatch that bypasses policy.

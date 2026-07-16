@@ -1,47 +1,51 @@
 # `@unifyport/sdk-node`
 
-面向 Node.js/TypeScript 的 UnifyPort Device API SDK。它提供类型安全的
-`UnifyPortDeviceClient`、统一的成功响应与错误模型，以及 timeout、安全重试、取消和 cursor
-分页能力。
+[English](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/packages/sdk/README.md) | [简体中文](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/packages/sdk/README.zh-CN.md)
 
-SDK 使用固定的 `X-Api-Key` 认证边界。`/v1/accounts/...` operation 属于 Device API，统一由
-`UnifyPortDeviceClient` 提供。
+The UnifyPort Device API SDK for Node.js and TypeScript. It provides the type-safe
+`UnifyPortDeviceClient`, consistent success response and error models, timeouts, safe retries,
+cancellation, and cursor pagination.
 
-## 功能范围
+The SDK uses a fixed `X-Api-Key` authentication boundary. Operations under `/v1/accounts/...` belong to
+the Device API and are all available through `UnifyPortDeviceClient`.
 
-当前公开契约中的全部 operation 都有同名 SDK 方法，主要覆盖：
+## Features
 
-- workspace 与 provider region 查询；
-- provider 账号资源、授权流程与运行状态；
-- 会话、联系人和群组；
-- 消息发送与消息动作；
-- API Key 与 webhook endpoint 管理。
+Every operation in the current public contract has a same-named SDK method. Major areas include:
 
-方法名与 OpenAPI `operationId` 保持一致。每个 operation 的参数、请求体、返回字段和 TypeScript
-示例见 [API Reference](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/api-reference/README.md)；
-HTTP path、重试和 MCP 策略见
-[API 覆盖表](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/api-coverage.md)。
+- workspace and provider region queries;
+- provider account resources, authorization flows, and runtime status;
+- conversations, contacts, and groups;
+- message sending and message actions;
+- API key and webhook endpoint management.
 
-## 环境要求
+Method names match their OpenAPI `operationId` values. See the
+[API Reference](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/api-reference/README.md)
+for each operation's parameters, request body, response fields, and TypeScript example. See
+[API coverage](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/api-coverage.md) for
+HTTP paths, retry behavior, and MCP policies.
+
+## Requirements
 
 - Node.js `>=22.12.0`
-- TypeScript 项目或支持 ESM 的 Node.js 项目
+- A TypeScript project or a Node.js project with ESM support
 
-该 package 只提供 ESM `import` 和 TypeScript 声明文件，不提供 CommonJS `require()` 入口。
+This package provides only ESM `import` exports and TypeScript declarations. It does not provide a
+CommonJS `require()` entry point.
 
-## 安装
+## Installation
 
 ```bash
 npm install @unifyport/sdk-node
 ```
 
-也可以使用 pnpm：
+Or with pnpm:
 
 ```bash
 pnpm add @unifyport/sdk-node
 ```
 
-## 快速开始
+## Quick start
 
 ```ts
 import { UnifyPortDeviceClient } from "@unifyport/sdk-node";
@@ -54,7 +58,7 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-// 凭据只从运行环境读取，避免进入源码、构建产物或版本控制。
+// Read credentials only from the runtime environment so they never enter source or build artifacts.
 const device = new UnifyPortDeviceClient({
   baseUrl: requiredEnv("UNIFYPORT_DEVICE_API_BASE_URL"),
   apiKey: requiredEnv("UNIFYPORT_DEVICE_API_KEY")
@@ -66,9 +70,10 @@ console.log(result.data.data.name);
 console.log(result.status, result.requestId);
 ```
 
-`ApiResult.data` 是完整 API JSON envelope，因此资源数据通常位于 `result.data.data`。
+`ApiResult.data` contains the complete API JSON envelope, so resource data is usually available at
+`result.data.data`.
 
-## Client 配置
+## Client configuration
 
 ```ts
 const device = new UnifyPortDeviceClient({
@@ -84,29 +89,29 @@ const device = new UnifyPortDeviceClient({
 });
 ```
 
-| 配置项              | 必填 | 说明                                                                  |
-| ------------------- | ---- | --------------------------------------------------------------------- |
-| `baseUrl`           | 是   | Device API 的绝对 URL；远程地址必须使用 HTTPS                         |
-| `apiKey`            | 是   | 字符串，或返回字符串的同步/异步 provider                              |
-| `fetch`             | 否   | 自定义 `fetch` 实现，签名为 `(request: Request) => Promise<Response>` |
-| `timeoutMs`         | 否   | 默认 `30000`；每次 operation 的总超时                                 |
-| `maxResponseBytes`  | 否   | 默认 8 MiB，最大 64 MiB；同时限制 wire body 与规范化后的 JSON         |
-| `retry`             | 否   | 安全 operation 的重试次数和 full-jitter 退避配置                      |
-| `allowInsecureHttp` | 否   | 默认 `false`；仅允许显式开启的 loopback HTTP 开发环境                 |
+| Option              | Required | Description                                                                      |
+| ------------------- | -------- | -------------------------------------------------------------------------------- |
+| `baseUrl`           | Yes      | Absolute Device API URL; remote URLs must use HTTPS                              |
+| `apiKey`            | Yes      | A string or a synchronous/asynchronous provider that returns a string            |
+| `fetch`             | No       | Custom `fetch` implementation with `(request: Request) => Promise<Response>`     |
+| `timeoutMs`         | No       | Defaults to `30000`; total timeout for each operation                            |
+| `maxResponseBytes`  | No       | Defaults to 8 MiB, maximum 64 MiB; limits both wire body and normalized JSON     |
+| `retry`             | No       | Retry count and full-jitter backoff settings for safe operations                 |
+| `allowInsecureHttp` | No       | Defaults to `false`; allows only explicitly enabled loopback HTTP in development |
 
-`baseUrl` 不应包含 username、password、query 或 fragment。API key 由 client 统一注入，单次 operation
-不能覆盖认证 header。
+`baseUrl` must not contain a username, password, query, or fragment. The client injects the API key
+centrally, and an individual operation cannot override the authentication header.
 
-## 调用 operation
+## Calling operations
 
-方法统一使用 `(request?, execution?)`：
+Every method uses `(request?, execution?)`:
 
-- 没有参数的 operation 可以省略 `request`；
-- path 和 query 参数放在 `request.params`；
-- JSON 请求体放在 `request.body`；
-- 单次 timeout、重试收紧和取消信号放在 `execution`。
+- Omit `request` for operations without parameters.
+- Put path and query parameters in `request.params`.
+- Put a JSON request body in `request.body`.
+- Put per-call timeout, tighter retry settings, and the cancellation signal in `execution`.
 
-### 无参数读取
+### No-parameter reads
 
 ```ts
 const workspace = await device.getWorkspace();
@@ -118,7 +123,7 @@ for (const account of accounts.data.data) {
 }
 ```
 
-### Path 参数
+### Path parameters
 
 ```ts
 const regions = await device.listProviderRegions({
@@ -132,7 +137,7 @@ for (const region of regions.data.data.regions) {
 }
 ```
 
-### Path 与 query 参数
+### Path and query parameters
 
 ```ts
 const contacts = await device.listContacts({
@@ -146,7 +151,7 @@ console.log(contacts.data.data.items);
 console.log(contacts.data.data.next_cursor);
 ```
 
-### JSON 请求体
+### JSON request body
 
 ```ts
 const message = await device.sendMessage({
@@ -160,22 +165,24 @@ const message = await device.sendMessage({
 console.log(message.data.data.message_id, message.data.data.status);
 ```
 
-写操作不会因为 HTTP method 或调用方配置而自动获得重试能力。消息正文等敏感输入不应写入日志。
+A write operation does not become retryable because of its HTTP method or caller configuration. Do not
+write sensitive inputs such as message bodies to logs.
 
-## 成功响应
+## Successful responses
 
-所有 operation 都返回 `ApiResult<T>`：
+Every operation returns `ApiResult<T>`:
 
-| 字段        | 说明                                                    |
-| ----------- | ------------------------------------------------------- |
-| `data`      | 按公开契约解析后的完整 API JSON envelope                |
-| `status`    | HTTP status                                             |
-| `requestId` | 可选的服务端 request ID                                 |
-| `response`  | 底层 `Response`，用于读取正常响应的 header 等传输元数据 |
+| Field       | Description                                                               |
+| ----------- | ------------------------------------------------------------------------- |
+| `data`      | Complete API JSON envelope parsed according to the public contract        |
+| `status`    | HTTP status                                                               |
+| `requestId` | Optional server request ID                                                |
+| `response`  | Underlying `Response` for headers and other successful transport metadata |
 
-`response` 的 body 已由 SDK 解析，不应依赖再次读取；业务数据使用类型化的 `data`。
+The SDK has already parsed the `response` body; do not depend on reading it again. Use the typed `data`
+for application data.
 
-## Timeout、取消与重试
+## Timeouts, cancellation, and retries
 
 ```ts
 const controller = new AbortController();
@@ -190,20 +197,22 @@ const workspace = await device.getWorkspace(
 );
 ```
 
-单次 `execution.retry` 只能关闭或收紧 client 级重试：
+A per-call `execution.retry` setting can only disable or tighten client-level retries:
 
 ```ts
 await device.getWorkspace({}, { retry: false });
 await device.getWorkspace({}, { retry: { maxRetries: 0 } });
 ```
 
-自动重试只适用于策略明确允许的安全 operation，处理网络失败和 `408`、`429`、`502`、`503`、
-`504` 等临时状态，并遵守合法的 `Retry-After`。普通写操作、账号授权提交和一次性 secret operation
-不会自动重试。
+Automatic retries apply only to safe operations explicitly allowed by policy. They handle network
+failures and temporary statuses such as `408`, `429`, `502`, `503`, and `504`, and honor a valid
+`Retry-After` value. Ordinary writes, account authorization submissions, and one-time secret operations
+are not retried automatically.
 
-## Cursor 分页
+## Cursor pagination
 
-`paginateCursor` 会逐项迭代分页数据，并提供最大页数、重复 cursor 检测与 `AbortSignal` 支持：
+`paginateCursor` iterates page items and supports a maximum page count, repeated cursor detection, and
+`AbortSignal`:
 
 ```ts
 import { paginateCursor } from "@unifyport/sdk-node";
@@ -213,7 +222,7 @@ const controller = new AbortController();
 
 for await (const contact of paginateCursor(
   async (cursor, pageSignal) => {
-    // exactOptionalPropertyTypes 下不把 undefined 写入可选 query 字段。
+    // With exactOptionalPropertyTypes, do not assign undefined to an optional query field.
     const query = cursor === undefined ? { limit: 100 } : { cursor, limit: 100 };
     const result = await device.listContacts(
       {
@@ -232,12 +241,14 @@ for await (const contact of paginateCursor(
 }
 ```
 
-分页 helper 默认最多读取 10,000 页。业务代码通常应根据自身任务量设置更小的 `maxPages`。
+The pagination helper reads at most 10,000 pages by default. Application code should normally set a
+smaller `maxPages` value appropriate to its workload.
 
-## 错误处理
+## Error handling
 
-所有公开错误都继承 `UnifyPortError`。建议只记录经过筛选的 `status`、`code`、`requestId`、`api` 和
-`operationId`，不要直接序列化完整错误、请求、响应或 header。
+All public errors extend `UnifyPortError`. Record only reviewed fields such as `status`, `code`,
+`requestId`, `api`, and `operationId`. Do not serialize complete errors, requests, responses, or
+headers.
 
 ```ts
 import { UnifyPortAbortError, UnifyPortApiError, UnifyPortTimeoutError } from "@unifyport/sdk-node";
@@ -262,19 +273,19 @@ try {
 }
 ```
 
-| 错误类型                      | 场景                                    |
-| ----------------------------- | --------------------------------------- |
-| `UnifyPortConfigurationError` | client 配置无效                         |
-| `UnifyPortNetworkError`       | 网络或自定义 credential provider 失败   |
-| `UnifyPortTimeoutError`       | operation 超时                          |
-| `UnifyPortAbortError`         | 调用方通过 `AbortSignal` 取消           |
-| `UnifyPortApiError`           | API 返回非成功 HTTP status              |
-| `UnifyPortResponseParseError` | 成功响应无法安全解析                    |
-| `UnifyPortPaginationError`    | cursor 缺失、重复、超出页数或分页被取消 |
+| Error type                    | Scenario                                                              |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `UnifyPortConfigurationError` | Invalid client configuration                                          |
+| `UnifyPortNetworkError`       | Network or custom credential provider failure                         |
+| `UnifyPortTimeoutError`       | Operation timeout                                                     |
+| `UnifyPortAbortError`         | Caller cancellation through `AbortSignal`                             |
+| `UnifyPortApiError`           | API returned a non-success HTTP status                                |
+| `UnifyPortResponseParseError` | Successful response could not be parsed safely                        |
+| `UnifyPortPaginationError`    | Missing/repeated cursor, page limit exceeded, or pagination cancelled |
 
-## TypeScript 类型
+## TypeScript types
 
-根入口同时导出公开契约类型：
+The package root also exports the public contract types:
 
 ```ts
 import type { DeviceApiComponents, DeviceApiOperations, DeviceApiPaths } from "@unifyport/sdk-node";
@@ -284,21 +295,26 @@ type SendMessageOperation = DeviceApiOperations["sendMessage"];
 type DevicePaths = DeviceApiPaths;
 ```
 
-为避免 JavaScript 精度丢失，SDK 会把超出安全范围的整数保留为字符串。因此 `uint64`/`int64` 风格
-字段可能是 `number | string`；不要在没有范围保证时无条件调用 `Number(...)`。
+To avoid JavaScript precision loss, the SDK preserves integers outside the safe range as strings.
+Fields modeled like `uint64` or `int64` may therefore be `number | string`. Do not call `Number(...)`
+unconditionally unless the value's range is guaranteed.
 
-## 安全注意事项
+## Security considerations
 
-- API key 应从 secret manager 或运行环境提供，不要硬编码或提交到版本控制；
-- 生产环境必须使用 HTTPS；`allowInsecureHttp` 只接受显式开启的 loopback 地址；
-- 不要记录认证 header、授权 code/password/session、消息正文或一次性 secret；
-- 不要从外部输入动态覆盖 `baseUrl`；client 会把凭据限制在初始化时确定的 origin/path；
-- 对写操作自行设计业务幂等和失败恢复，不要把读取 operation 的重试假设套用到写入。
+- Provide the API key through a secret manager or runtime environment; never hard-code or commit it.
+- Require HTTPS in production. `allowInsecureHttp` accepts only explicitly enabled loopback addresses.
+- Do not log authentication headers, authorization codes/passwords/sessions, message bodies, or
+  one-time secrets.
+- Do not override `baseUrl` dynamically from external input. The client confines credentials to the
+  origin and path established during initialization.
+- Design application-level idempotency and failure recovery for writes. Do not apply read-operation
+  retry assumptions to writes.
 
-更多设计细节见[安全边界](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/security.md)。
+For more detail, see the
+[security boundaries](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/security.md).
 
-## 项目与许可证
+## Project and license
 
-- [GitHub 仓库](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs)
-- [项目 README](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs#readme)
+- [GitHub repository](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs)
+- [Project README](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs#readme)
 - [MIT License](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/LICENSE)

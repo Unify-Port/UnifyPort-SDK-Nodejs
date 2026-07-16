@@ -21,12 +21,14 @@ interface JsonObject {
   readonly [key: string]: JsonValue;
 }
 
+// 两种语言的 README 都必须进入 tarball，避免 npm 默认页与安装后的本地文档覆盖范围不同。
 const packages = [
   {
     directory: "packages/sdk",
     required: [
       "package/package.json",
       "package/README.md",
+      "package/README.zh-CN.md",
       "package/dist/index.js",
       "package/dist/index.d.ts",
       "package/dist/device/index.js",
@@ -38,6 +40,7 @@ const packages = [
     required: [
       "package/package.json",
       "package/README.md",
+      "package/README.zh-CN.md",
       "package/dist/index.js",
       "package/dist/index.d.ts",
       "package/dist/cli.js"

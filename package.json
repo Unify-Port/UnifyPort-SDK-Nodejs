@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "license": "MIT",
-  "description": "UnifyPort Node.js SDK、MCP Server 与公开协作 skill 的工作区。",
+  "description": "Workspace for the UnifyPort Node.js SDK, MCP server, and public automation skills.",
   "type": "module",
   "repository": {
     "type": "git",

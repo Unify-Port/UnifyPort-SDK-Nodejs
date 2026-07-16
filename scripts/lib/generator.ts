@@ -11,6 +11,10 @@ import {
   generateApiReferenceArtifacts,
   type ApiReferenceSource
 } from "./api-reference.js";
+import {
+  addLanguageNavigation,
+  translateGeneratedMarkdownToEnglish
+} from "./api-reference-i18n.js";
 
 type JsonPrimitive = boolean | null | number | string;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
@@ -86,7 +90,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const GENERATED_ARTIFACT_DIRECTORIES = [
   { path: "packages/sdk/src/generated", suffix: ".ts", cleanBeforeWrite: false },
   { path: "packages/sdk/tests/generated", suffix: ".ts", cleanBeforeWrite: true },
-  { path: "docs/api-reference", suffix: ".md", cleanBeforeWrite: true }
+  { path: "docs/api-reference", suffix: ".md", cleanBeforeWrite: true },
+  { path: "docs/zh-CN/api-reference", suffix: ".md", cleanBeforeWrite: true }
 ] as const;
 // 覆盖 OpenAPI Path Item 允许的全部 HTTP method，避免未来新增合法 operation 时被静默漏生成。
 const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch", "trace"] as const;
@@ -856,7 +861,32 @@ export async function generateArtifacts(): Promise<ReadonlyMap<string, string>> 
     "packages/mcp/src/generated/metadata.ts",
     generateMetadata(apiResults, serverVersion)
   );
-  artifacts.set("docs/api-coverage.md", generateCoverageMarkdown(apiResults));
+  const chineseCoverage = generateCoverageMarkdown(apiResults);
+  const coverageArtifacts = [
+    [
+      "docs/api-coverage.md",
+      addLanguageNavigation(
+        translateGeneratedMarkdownToEnglish(chineseCoverage),
+        "api-coverage.md",
+        "zh-CN/api-coverage.md"
+      )
+    ],
+    [
+      "docs/zh-CN/api-coverage.md",
+      addLanguageNavigation(chineseCoverage, "../api-coverage.md", "api-coverage.md")
+    ]
+  ] as const;
+  for (const [path, content] of coverageArtifacts) {
+    // 覆盖表与 Reference 使用同一格式化入口，避免 generate 后立刻出现 Prettier 漂移。
+    const prettierConfig = await resolveConfig(resolve(ROOT, path));
+    artifacts.set(
+      path,
+      await format(content, {
+        ...(prettierConfig ?? {}),
+        filepath: resolve(ROOT, path)
+      })
+    );
+  }
   return artifacts;
 }
 

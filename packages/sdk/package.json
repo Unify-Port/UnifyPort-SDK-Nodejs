@@ -2,13 +2,24 @@
   "name": "@unifyport/sdk-node",
   "version": "0.1.1",
   "license": "MIT",
-  "description": "面向 Node.js 的 UnifyPort Device API 类型安全 SDK。",
+  "description": "Type-safe Node.js SDK for the UnifyPort Device API.",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Unify-Port/UnifyPort-SDK-Nodejs.git",
     "directory": "packages/sdk"
   },
+  "homepage": "https://github.com/Unify-Port/UnifyPort-SDK-Nodejs#readme",
+  "bugs": {
+    "url": "https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/issues"
+  },
+  "keywords": [
+    "unifyport",
+    "sdk",
+    "device-api",
+    "nodejs",
+    "typescript"
+  ],
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -28,7 +39,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md"
   ],
   "sideEffects": false,
   "scripts": {
