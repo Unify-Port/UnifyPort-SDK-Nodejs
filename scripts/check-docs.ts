@@ -43,6 +43,7 @@ const BILINGUAL_DOCUMENTS = [
   ["packages/mcp/README.md", "packages/mcp/README.zh-CN.md"],
   ["docs/acceptance-report.md", "docs/zh-CN/acceptance-report.md"],
   ["docs/architecture.md", "docs/zh-CN/architecture.md"],
+  ["docs/clawhub-publishing.md", "docs/zh-CN/clawhub-publishing.md"],
   ["docs/contract-maintenance.md", "docs/zh-CN/contract-maintenance.md"],
   ["docs/security.md", "docs/zh-CN/security.md"],
   ["skills/unifyport-node-sdk/SKILL.md", "skills/unifyport-node-sdk/SKILL.zh-CN.md"],

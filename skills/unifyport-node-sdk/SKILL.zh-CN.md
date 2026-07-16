@@ -13,9 +13,62 @@
 - 更新公开契约、修复生成漂移或审查公开类型；
 - 调整认证、timeout、retry、pagination、错误或 JavaScript 整数边界。
 
-仅配置或扩展 MCP tools 时，还要使用相邻的 `unifyport-mcp` skill。
+这是一个开发与集成 skill。安装它不会把 Device API operation 暴露成 OpenClaw tools，也不会安装
+MCP Server 或提供任何凭据。
 
-## 开始前必须做
+开始前先选择一种模式：
+
+- **项目使用**：在应用中安装或使用公开的 `@unifyport/sdk-node` package；
+- **仓库维护**：修改 SDK 仓库、公开契约、生成代码或测试。
+
+只有在 SDK 仓库内处理 MCP 专属行为时，才同时使用仓库本地的 `unifyport-mcp` skill。该 MCP
+skill 不属于 ClawHub 发布边界。
+
+## 所有任务的准备步骤
+
+1. 确认当前任务属于项目使用还是仓库维护。
+2. 安装或调整依赖前，先检查目标项目及其现有 package manager。
+3. 从已安装类型或公开文档确认真实 package exports 与 operation 名称。
+4. 不要求用户粘贴、打印或持久化真实 API key。实时请求所需凭据只能由用户或部署系统通过运行环境提供。
+
+## 项目使用流程
+
+1. 确认 Node.js `>=22.12.0`。
+2. 沿用目标项目已有的 package manager 安装 SDK。使用 npm 时执行：
+
+   ```bash
+   npm install @unifyport/sdk-node
+   ```
+
+3. 从 package 根入口导入 `UnifyPortDeviceClient` 和公开类型。
+4. 从运行环境读取 base URL 和 API key，不得把它们写入源码、生成文件、日志、tool input 或提交的配置。
+5. 使用类型化 operation 方法，不手拼 path、query string 或认证 header。
+6. 集成后运行目标项目已有的测试和类型检查。
+
+最小配置：
+
+```ts
+import { UnifyPortDeviceClient } from "@unifyport/sdk-node";
+
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+
+const device = new UnifyPortDeviceClient({
+  baseUrl: requiredEnv("UNIFYPORT_DEVICE_API_BASE_URL"),
+  apiKey: requiredEnv("UNIFYPORT_DEVICE_API_KEY")
+});
+```
+
+不要仅为验证安装而执行实时请求。除非用户明确要求实时调用并提供获批的测试环境，否则优先使用类型检查和
+mock transport 测试。
+
+## 仓库维护准备
+
+仅当 workspace 同时存在 SDK 仓库标记 `AGENTS.md`、`contracts/device.openapi.yaml`，且根
+`package.json` 对应 `unifyport-sdk-node-workspace` 时，才执行本节步骤。
 
 1. 阅读仓库根 `AGENTS.md`。
 2. 阅读 `docs/zh-CN/architecture.md`、`docs/zh-CN/security.md`；涉及 API 变化时再读 `docs/zh-CN/contract-maintenance.md`。
@@ -39,9 +92,9 @@
 
 不要把 API key 或 base URL 作为普通 operation 参数。provider 账号授权所需的 password、code 或 session payload 只能通过对应的类型化 operation 传入，并按敏感输入处理。
 
-## 维护 workflow
+## 共用规则
 
-### 只使用现有 API
+### 使用现有 operation
 
 1. 从 package 根入口导入客户端和类型。
 2. 使用类型化 operation 方法，不手拼 path 或 header。
@@ -49,7 +102,7 @@
 4. 需要遍历 cursor 时优先使用已提供的 pagination helper；否则显式设置上限并处理重复 cursor。
 5. 不把 `uint64` 风格 ID 转成 `number`，除非契约明确保证安全范围。
 
-### 新增或变化 API
+### 在 SDK 仓库中新增或变更 API
 
 1. 审查经批准的公开 API schema 与 release notes。
 2. 更新 `contracts/device.openapi.yaml`。
@@ -82,6 +135,7 @@
 完整验证：
 
 ```bash
+pnpm clawhub:check
 pnpm check
 pnpm public:check
 ```

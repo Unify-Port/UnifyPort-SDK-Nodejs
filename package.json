@@ -15,7 +15,8 @@
   },
   "scripts": {
     "build": "pnpm -r --workspace-concurrency=1 build",
-    "check": "pnpm public:check && pnpm contracts:lint && pnpm generate:check && pnpm docs:check && pnpm lint && pnpm format:check && pnpm test && pnpm typecheck && pnpm build && pnpm package:check",
+    "check": "pnpm public:check && pnpm clawhub:check && pnpm contracts:lint && pnpm generate:check && pnpm docs:check && pnpm lint && pnpm format:check && pnpm test && pnpm typecheck && pnpm build && pnpm package:check",
+    "clawhub:check": "tsx scripts/check-clawhub-skills.ts",
     "clean": "tsx scripts/clean.ts",
     "contracts:lint": "redocly lint contracts/device.openapi.yaml",
     "docs:check": "tsx scripts/check-docs.ts",

@@ -91,6 +91,18 @@ maintenance scripts use TypeScript; `.mjs` files are not accepted.
 HTTPS is required by default. A development environment that genuinely needs loopback HTTP must opt in
 explicitly through the client configuration. Do not enable this exception in production.
 
+## ClawHub SDK skill
+
+`skills/unifyport-node-sdk` is the only ClawHub publication candidate in this repository. It is a
+development and integration guide for the public npm SDK; it does not bundle the SDK runtime, install
+the MCP server, expose Device API operations as OpenClaw tools, or contain credentials.
+
+The ClawHub release belongs to the authenticated personal publisher account and uses MIT-0 as required
+by ClawHub. Skill versions are independent from npm SDK versions. `skills/unifyport-mcp` remains
+repository-local while `@unifyport/mcp-server` is private. See
+[Publishing the SDK Skill to ClawHub](docs/clawhub-publishing.md) for the exact boundary, dry-run,
+manual release, and post-release verification process.
+
 ## MCP quick start
 
 Build the workspace first:
@@ -150,6 +162,7 @@ Run all commands from the root `package.json`:
 | Command               | Purpose                                                 |
 | --------------------- | ------------------------------------------------------- |
 | `pnpm build`          | Builds packages in workspace order                      |
+| `pnpm clawhub:check`  | Checks the SDK Skill metadata and publication boundary  |
 | `pnpm clean`          | Removes coverage and package build artifacts            |
 | `pnpm check`          | Runs the complete engineering quality gate              |
 | `pnpm public:check`   | Checks public repository content and release boundaries |
@@ -199,6 +212,7 @@ unifyport-sdk-node/
 - [Architecture](docs/architecture.md)
 - [Security boundaries](docs/security.md)
 - [Contract maintenance](docs/contract-maintenance.md)
+- [ClawHub publishing](docs/clawhub-publishing.md)
 - [Acceptance report](docs/acceptance-report.md)
 - [SDK skill](skills/unifyport-node-sdk/SKILL.md)
 - [MCP skill](skills/unifyport-mcp/SKILL.md)
