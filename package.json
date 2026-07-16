@@ -1,6 +1,6 @@
 {
   "name": "unifyport-sdk-node-workspace",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "license": "MIT",
   "description": "Workspace for the UnifyPort Node.js SDK, MCP server, and public automation skills.",
