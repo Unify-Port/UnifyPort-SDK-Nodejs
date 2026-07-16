@@ -11,7 +11,7 @@
 
 The SDK, MCP server, public skills, generation pipeline, and quality gates passed the complete local acceptance baseline. The project can continue to adopt new operations from the public API contract. A new operation is not retried or exposed through MCP until its policy has been explicitly reviewed.
 
-`@unifyport/sdk-node` version `0.1.1` is published to npm under the MIT license. `@unifyport/mcp-server` remains `private: true`; publishing the SDK does not expand the MCP server's distribution boundary.
+`@unifyport/sdk-node` version `0.1.2` is published to npm under the MIT license. `@unifyport/mcp-server` remains `private: true`; publishing the SDK does not expand the MCP server's distribution boundary.
 
 ## Scope
 
@@ -77,7 +77,7 @@ The current CI matrix runs `pnpm check` on Node.js 22.12.0 and 24.x. The reposit
 ## External Verification Status
 
 - No automated test uses a production credential or calls the production API; injected `fetch` implementations cover protocol, security, and error boundaries.
-- `@unifyport/sdk-node@0.1.1` has been published to npm and tagged as `v0.1.1` in Git.
+- `@unifyport/sdk-node@0.1.2` has been published to npm and tagged as `v0.1.2` in Git.
 - `@unifyport/mcp-server` has not been published and remains private.
 
 These boundaries should be reviewed again for each release, together with the current CI result and npm package contents.

@@ -11,7 +11,7 @@
 
 SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的本地验收基线。项目可以继续接收新的公开 API 契约 operation；新增 operation 默认不重试、默认不进入 MCP，必须经过显式策略审查。
 
-`@unifyport/sdk-node` `0.1.1` 已按 MIT 许可证发布到 npm。`@unifyport/mcp-server` 仍保持 `private: true`；发布 SDK 不会扩大 MCP Server 的分发边界。
+`@unifyport/sdk-node` `0.1.2` 已按 MIT 许可证发布到 npm。`@unifyport/mcp-server` 仍保持 `private: true`；发布 SDK 不会扩大 MCP Server 的分发边界。
 
 ## 验收范围
 
@@ -77,7 +77,7 @@ SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的
 ## 外部验证状态
 
 - 自动化测试不使用生产 credential，也不调用生产 API；通过注入式 `fetch` 覆盖协议、安全与错误边界；
-- `@unifyport/sdk-node@0.1.1` 已发布到 npm，并在 Git 中标记为 `v0.1.1`；
+- `@unifyport/sdk-node@0.1.2` 已发布到 npm，并在 Git 中标记为 `v0.1.2`；
 - `@unifyport/mcp-server` 未发布并保持私有。
 
 每次发布都应重新复核这些边界，以及当次 CI 结果和 npm package 内容。
