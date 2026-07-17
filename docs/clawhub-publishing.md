@@ -4,8 +4,9 @@
 
 ## Decisions
 
-- The ClawHub release is owned by the personal account authenticated by `clawhub login` or represented
-  by `CLAWHUB_TOKEN`. Publish commands and workflows intentionally omit `--owner` and the `owner` input.
+- The ClawHub release is owned by the GitHub user account `@unifyport`. `CLAWHUB_TOKEN` must represent
+  that account, and the release workflow verifies `clawhub whoami` before publishing. Publish commands
+  intentionally omit `--owner` and the `owner` input.
 - Every ClawHub Skill release uses the platform-required MIT-0 license. This applies to the published
   Skill bundle and does not change the MIT license of `@unifyport/sdk-node` or the repository.
 
@@ -23,7 +24,7 @@ install the runtime separately from npm as `@unifyport/sdk-node`.
 
 ## Prerequisites
 
-1. Install a current ClawHub CLI and authenticate the personal publisher account:
+1. Install a current ClawHub CLI and authenticate the `@unifyport` publisher account:
 
    ```bash
    npm install --global clawhub
@@ -31,7 +32,7 @@ install the runtime separately from npm as `@unifyport/sdk-node`.
    clawhub whoami
    ```
 
-2. For GitHub Actions, create the repository secret `CLAWHUB_TOKEN` from the same personal account.
+2. For GitHub Actions, create the repository secret `CLAWHUB_TOKEN` from the same `@unifyport` account.
    Never commit or print the token.
 3. Review the current ClawHub
    [Skill format](https://docs.openclaw.ai/clawhub/skill-format),
@@ -64,15 +65,17 @@ clawhub skill publish ./skills/unifyport-node-sdk \
   --json
 ```
 
-The command intentionally omits `--owner`, so ClawHub resolves the personal owner from the authenticated
-account. Dry-run must complete without uploading before a real release is approved.
+The command intentionally omits `--owner`. The unauthenticated dry-run validates the bundle, while the
+real workflow verifies that `clawhub whoami` resolves to `unifyport` before uploading. Dry-run must
+complete without uploading before a real release is approved.
 
 ## GitHub Actions flow
 
 `.github/workflows/clawhub-skill-publish.yml` has two paths:
 
 - pull requests run the pinned ClawHub CLI with `--dry-run` and no publishing token;
-- `workflow_dispatch` performs the real release from `main` using `CLAWHUB_TOKEN`.
+- `workflow_dispatch` verifies that `CLAWHUB_TOKEN` belongs to `@unifyport`, then performs the real
+  release from `main`.
 
 Both paths pass the exact `skills/unifyport-node-sdk` folder and the display name `UnifyPort Node.js
 SDK`. The CLI version is pinned to the version validated by this repository so upstream changes and
@@ -84,13 +87,12 @@ versioning is independent from the npm SDK version and must not be forced to mat
 
 ## Release verification
 
-After the manual workflow succeeds, replace `<personal-handle>` with the owner reported by `clawhub
-whoami` and verify the exact release:
+After the manual workflow succeeds, verify the exact `@unifyport` release:
 
 ```bash
-clawhub inspect @<personal-handle>/unifyport-node-sdk --versions --files --json
+clawhub inspect @unifyport/unifyport-node-sdk --versions --files --json
 clawhub scan --slug unifyport-node-sdk --version 1.0.0 --json
-openclaw skills install @<personal-handle>/unifyport-node-sdk
+openclaw skills install @unifyport/unifyport-node-sdk
 ```
 
 Confirm the published file list, MIT-0 license, version, source attribution, and security audit status.

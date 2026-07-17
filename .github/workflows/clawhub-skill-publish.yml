@@ -60,8 +60,8 @@ jobs:
         with:
           node-version: 24.x
 
-      - name: Configure personal publisher
-        # runner context 只能在 step 内解析；token 只写入临时文件并由个人账号持有 release。
+      - name: Configure UnifyPort publisher
+        # runner context 只能在 step 内解析；凭据只写入临时文件并必须属于 @unifyport。
         env:
           CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub-config.json
           CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
@@ -72,6 +72,12 @@ jobs:
           fs.writeFileSync(process.env.CLAWHUB_CONFIG_PATH,
           JSON.stringify({ registry: "https://clawhub.ai", token }) + "\n",
           { mode: 0o600 });'
+
+      - name: Verify UnifyPort publisher
+        # 发布前锁定账号，避免 Secret 被其他个人 token 替换后误发到错误命名空间。
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub-config.json
+        run: test "$(npx --yes clawhub@0.23.1 whoami)" = "unifyport"
 
       - name: Publish ClawHub bundle
         # 与配置步骤复用临时路径，避免凭据文件落入 checkout workspace。

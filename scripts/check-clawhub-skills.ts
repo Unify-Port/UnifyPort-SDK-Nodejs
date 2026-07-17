@@ -80,9 +80,10 @@ requireCondition(
   !workflow.includes("skills/unifyport-mcp"),
   `${WORKFLOW_PATH}: 不得包含 private MCP Skill`
 );
+// 同时拒绝空格与等号两种 CLI 参数形式，避免绕过固定账号边界。
 requireCondition(
-  !/(?:^\s+owner:\s*|--owner(?:\s|$))/mu.test(workflow),
-  `${WORKFLOW_PATH}: 个人发布模式必须由认证账号解析 owner`
+  !/(?:^\s+owner:\s*|--owner(?:=|\s|$))/mu.test(workflow),
+  `${WORKFLOW_PATH}: 必须由已验证的认证账号解析 owner`
 );
 requireCondition(
   workflow.includes("pull_request:") && workflow.includes("workflow_dispatch:"),
@@ -96,9 +97,14 @@ requireCondition(
   workflow.includes("CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}"),
   `${WORKFLOW_PATH}: 真实发布必须只从 CLAWHUB_TOKEN secret 读取凭据`
 );
+// 固定校验公开发布账号，避免后续更换 Secret 时意外回退到个人命名空间。
 requireCondition(
-  [...workflow.matchAll(/clawhub@0\.23\.1/gu)].length === 2,
-  `${WORKFLOW_PATH}: dry-run 与 publish 必须使用已验证的固定 CLI 版本`
+  workflow.includes('test "$(npx --yes clawhub@0.23.1 whoami)" = "unifyport"'),
+  `${WORKFLOW_PATH}: 真实发布前必须验证 @unifyport 账号`
+);
+requireCondition(
+  [...workflow.matchAll(/clawhub@0\.23\.1/gu)].length === 3,
+  `${WORKFLOW_PATH}: dry-run、账号校验与 publish 必须使用已验证的固定 CLI 版本`
 );
 requireCondition(
   [...workflow.matchAll(/--name "UnifyPort Node\.js SDK"/gu)].length === 2,
@@ -106,12 +112,12 @@ requireCondition(
 );
 
 requireCondition(
-  publishingDoc.includes("personal account") && publishingDoc.includes("MIT-0"),
-  `${PUBLISHING_DOC_PATH}: 缺少个人 owner 或 MIT-0 决策`
+  publishingDoc.includes("@unifyport") && publishingDoc.includes("MIT-0"),
+  `${PUBLISHING_DOC_PATH}: 缺少 @unifyport owner 或 MIT-0 决策`
 );
 requireCondition(
-  publishingDocZh.includes("个人账号") && publishingDocZh.includes("MIT-0"),
-  `${PUBLISHING_DOC_ZH_PATH}: 缺少个人 owner 或 MIT-0 决策`
+  publishingDocZh.includes("@unifyport") && publishingDocZh.includes("MIT-0"),
+  `${PUBLISHING_DOC_ZH_PATH}: 缺少 @unifyport owner 或 MIT-0 决策`
 );
 requireCondition(
   /"private":\s*true/u.test(mcpPackage),
@@ -124,5 +130,5 @@ if (failures.length > 0) {
 }
 
 process.stderr.write(
-  `[clawhub:check] validated ${SKILL_PATH} and personal-owner publication boundary\n`
+  `[clawhub:check] validated ${SKILL_PATH} and fixed @unifyport publication boundary\n`
 );

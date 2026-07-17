@@ -97,8 +97,8 @@ explicitly through the client configuration. Do not enable this exception in pro
 development and integration guide for the public npm SDK; it does not bundle the SDK runtime, install
 the MCP server, expose Device API operations as OpenClaw tools, or contain credentials.
 
-The ClawHub release belongs to the authenticated personal publisher account and uses MIT-0 as required
-by ClawHub. Skill versions are independent from npm SDK versions. `skills/unifyport-mcp` remains
+The ClawHub release belongs to the authenticated GitHub user account `@unifyport` and uses MIT-0 as
+required by ClawHub. Skill versions are independent from npm SDK versions. `skills/unifyport-mcp` remains
 repository-local while `@unifyport/mcp-server` is private. See
 [Publishing the SDK Skill to ClawHub](docs/clawhub-publishing.md) for the exact boundary, dry-run,
 manual release, and post-release verification process.
