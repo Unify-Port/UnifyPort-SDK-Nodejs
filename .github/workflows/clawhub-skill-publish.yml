@@ -1,0 +1,88 @@
+name: ClawHub SDK Skill
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/clawhub-skill-publish.yml"
+      - "skills/unifyport-node-sdk/**"
+      - "docs/clawhub-publishing.md"
+      - "docs/zh-CN/clawhub-publishing.md"
+      - "scripts/check-clawhub-skills.ts"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: Validate SDK Skill
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
+      - name: Validate ClawHub bundle
+        # 固定 CLI 与展示名，避免上游变化或自动 title case 破坏 UnifyPort 品牌大小写。
+        run: >-
+          npx --yes clawhub@0.23.1 skill publish ./skills/unifyport-node-sdk
+          --slug unifyport-node-sdk
+          --name "UnifyPort Node.js SDK"
+          --dry-run
+          --json
+          --source-repo "${{ github.repository }}"
+          --source-commit "${{ github.sha }}"
+          --source-ref "${{ github.ref }}"
+          --source-path "skills/unifyport-node-sdk"
+
+  publish:
+    name: Publish SDK Skill
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
+      - name: Configure personal publisher
+        # runner context 只能在 step 内解析；token 只写入临时文件并由个人账号持有 release。
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub-config.json
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        run: >-
+          node -e 'const fs = require("node:fs");
+          const token = process.env.CLAWHUB_TOKEN;
+          if (!token) throw new Error("CLAWHUB_TOKEN is required");
+          fs.writeFileSync(process.env.CLAWHUB_CONFIG_PATH,
+          JSON.stringify({ registry: "https://clawhub.ai", token }) + "\n",
+          { mode: 0o600 });'
+
+      - name: Publish ClawHub bundle
+        # 与配置步骤复用临时路径，避免凭据文件落入 checkout workspace。
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub-config.json
+        run: >-
+          npx --yes clawhub@0.23.1 skill publish ./skills/unifyport-node-sdk
+          --slug unifyport-node-sdk
+          --name "UnifyPort Node.js SDK"
+          --json
+          --source-repo "${{ github.repository }}"
+          --source-commit "${{ github.sha }}"
+          --source-ref "${{ github.ref }}"
+          --source-path "skills/unifyport-node-sdk"

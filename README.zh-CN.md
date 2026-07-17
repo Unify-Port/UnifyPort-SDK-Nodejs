@@ -85,6 +85,17 @@ client 可通过 `maxResponseBytes` 收紧 wire body 与整数规范化后 JSON 
 默认只允许 HTTPS。开发环境如确实需要 loopback HTTP，必须通过 client 配置显式 opt in；生产环境
 不应开启该例外。
 
+## ClawHub SDK skill
+
+`skills/unifyport-node-sdk` 是本仓库唯一的 ClawHub 发布候选。它是公开 npm SDK 的开发与集成说明，
+不包含 SDK runtime，不安装 MCP Server，不会把 Device API operation 暴露成 OpenClaw tools，也不
+包含任何凭据。
+
+ClawHub release 归属当前认证的个人发布账号，并按 ClawHub 要求使用 MIT-0。Skill 版本独立于 npm
+SDK 版本。`@unifyport/mcp-server` 保持 private 期间，`skills/unifyport-mcp` 继续留在仓库内。完整的
+发布边界、dry-run、手动发布和发布后验证流程见
+[ClawHub SDK Skill 发布说明](docs/zh-CN/clawhub-publishing.md)。
+
 ## MCP 快速开始
 
 先构建工作区：
@@ -142,6 +153,7 @@ pnpm public:check
 | 命令                  | 作用                                |
 | --------------------- | ----------------------------------- |
 | `pnpm build`          | 按 workspace 顺序构建 package       |
+| `pnpm clawhub:check`  | 检查 SDK Skill metadata 与发布边界  |
 | `pnpm clean`          | 清理 coverage 与 package 构建产物   |
 | `pnpm check`          | 运行完整工程门禁                    |
 | `pnpm public:check`   | 检查公开仓库内容与发布边界          |
@@ -189,6 +201,7 @@ unifyport-sdk-node/
 - [架构说明](docs/zh-CN/architecture.md)
 - [安全边界](docs/zh-CN/security.md)
 - [契约维护流程](docs/zh-CN/contract-maintenance.md)
+- [ClawHub 发布说明](docs/zh-CN/clawhub-publishing.md)
 - [验收报告](docs/zh-CN/acceptance-report.md)
 - [SDK skill](skills/unifyport-node-sdk/SKILL.md)
 - [MCP skill](skills/unifyport-mcp/SKILL.md)

@@ -1,6 +1,21 @@
 ---
 name: unifyport-node-sdk
 description: Use when maintaining or using the UnifyPort Node.js SDK; covers the Device API client, public contract, generated code, errors, retries, and the new API workflow.
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - node
+        - npm
+    primaryEnv: UNIFYPORT_DEVICE_API_KEY
+    envVars:
+      - name: UNIFYPORT_DEVICE_API_BASE_URL
+        required: false
+        description: Required only when executing a live UnifyPort Device API request.
+      - name: UNIFYPORT_DEVICE_API_KEY
+        required: false
+        description: Required only when executing an authenticated live Device API request.
+    homepage: "https://www.npmjs.com/package/@unifyport/sdk-node"
 ---
 
 [English](SKILL.md) | [简体中文](SKILL.zh-CN.md)
@@ -16,9 +31,65 @@ Use this skill when a task involves any of the following:
 - updating the public contract, fixing generation drift, or reviewing public types;
 - changing authentication, timeout, retry, pagination, errors, or JavaScript integer boundaries.
 
-For tasks that only configure or extend MCP tools, also use the adjacent `unifyport-mcp` skill.
+This is a development and integration skill. Installing it does not expose Device API operations as
+OpenClaw tools, install an MCP server, or provide credentials.
 
-## Required preparation
+Choose one mode before taking action:
+
+- **Project usage**: install or use the public `@unifyport/sdk-node` package in an application.
+- **Repository maintenance**: modify the SDK repository, its public contract, generated code, or tests.
+
+When working inside the SDK repository on MCP-only behavior, also use its repository-local
+`unifyport-mcp` skill. That MCP skill is not part of the ClawHub publication boundary.
+
+## Preparation for every task
+
+1. Confirm whether the task is project usage or repository maintenance.
+2. Inspect the current project and package manager before installing or changing dependencies.
+3. Confirm the actual package exports and operation names from installed types or public documentation.
+4. Do not request, print, or persist a real API key. Live requests require credentials supplied through
+   the runtime environment by the user or deployment system.
+
+## Project usage workflow
+
+1. Confirm Node.js `>=22.12.0`.
+2. Install the SDK with the package manager already used by the target project. For npm:
+
+   ```bash
+   npm install @unifyport/sdk-node
+   ```
+
+3. Import `UnifyPortDeviceClient` and public types from the package root.
+4. Read the base URL and API key from the runtime environment. Do not place them in source, generated
+   files, logs, tool inputs, or committed configuration.
+5. Use typed operation methods instead of manually assembling paths, query strings, or authentication
+   headers.
+6. Run the target project's existing tests and type checker after integration.
+
+Minimal configuration:
+
+```ts
+import { UnifyPortDeviceClient } from "@unifyport/sdk-node";
+
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+}
+
+const device = new UnifyPortDeviceClient({
+  baseUrl: requiredEnv("UNIFYPORT_DEVICE_API_BASE_URL"),
+  apiKey: requiredEnv("UNIFYPORT_DEVICE_API_KEY")
+});
+```
+
+Do not execute a live request merely to validate installation. Prefer type checking and mocked transport
+tests unless the user explicitly requests a live call and supplies an approved test environment.
+
+## Repository maintenance preparation
+
+Apply this section only when the workspace contains the SDK repository markers `AGENTS.md`,
+`contracts/device.openapi.yaml`, and the root `package.json` for `unifyport-sdk-node-workspace`.
 
 1. Read the repository-root `AGENTS.md`.
 2. Read `docs/architecture.md` and `docs/security.md`. For API changes, also read `docs/contract-maintenance.md`.
@@ -42,9 +113,9 @@ The `/v1/accounts/...` paths in the contract represent provider account resource
 
 Do not pass an API key or base URL as a normal operation parameter. Passwords, codes, or session payloads required for provider account authorization may be passed only through the corresponding typed operations and must be treated as sensitive input.
 
-## Maintenance workflow
+## Shared usage rules
 
-### Using an existing API
+### Using an existing operation
 
 1. Import the client and types from the package root.
 2. Use typed operation methods instead of manually assembling paths or headers.
@@ -52,7 +123,7 @@ Do not pass an API key or base URL as a normal operation parameter. Passwords, c
 4. Prefer the provided pagination helper for cursor traversal. Otherwise, set an explicit limit and handle repeated cursors.
 5. Do not convert a `uint64`-style ID to `number` unless the contract explicitly guarantees a safe range.
 
-### Adding or changing an API
+### Adding or changing an API in the SDK repository
 
 1. Review the approved public API schema and release notes.
 2. Update `contracts/device.openapi.yaml`.
@@ -85,6 +156,7 @@ Do not pass an API key or base URL as a normal operation parameter. Passwords, c
 Full verification:
 
 ```bash
+pnpm clawhub:check
 pnpm check
 pnpm public:check
 ```
