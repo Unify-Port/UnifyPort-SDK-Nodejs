@@ -91,8 +91,8 @@ client 可通过 `maxResponseBytes` 收紧 wire body 与整数规范化后 JSON 
 不包含 SDK runtime，不安装 MCP Server，不会把 Device API operation 暴露成 OpenClaw tools，也不
 包含任何凭据。
 
-ClawHub release 归属当前认证的个人发布账号，并按 ClawHub 要求使用 MIT-0。Skill 版本独立于 npm
-SDK 版本。`@unifyport/mcp-server` 保持 private 期间，`skills/unifyport-mcp` 继续留在仓库内。完整的
+ClawHub release 归属 GitHub 用户账号 `@unifyport`，并按 ClawHub 要求使用 MIT-0。Skill 版本独立于
+npm SDK 版本。`@unifyport/mcp-server` 保持 private 期间，`skills/unifyport-mcp` 继续留在仓库内。完整的
 发布边界、dry-run、手动发布和发布后验证流程见
 [ClawHub SDK Skill 发布说明](docs/zh-CN/clawhub-publishing.md)。
 

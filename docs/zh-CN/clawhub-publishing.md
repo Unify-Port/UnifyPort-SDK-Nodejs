@@ -4,8 +4,8 @@
 
 ## 已确认决策
 
-- ClawHub release 归属 `clawhub login` 当前认证的个人账号，或 `CLAWHUB_TOKEN` 对应的个人账号。发布命令
-  和 workflow 有意省略 `--owner` 与 `owner` input。
+- ClawHub release 归属 GitHub 用户账号 `@unifyport`。`CLAWHUB_TOKEN` 必须对应该账号，真实发布
+  workflow 会先验证 `clawhub whoami`。发布命令有意省略 `--owner` 与 `owner` input。
 - 每个 ClawHub Skill release 都按平台要求使用 MIT-0。该许可证只适用于发布到 ClawHub 的 Skill
   bundle，不改变 `@unifyport/sdk-node` 与本仓库当前使用的 MIT 许可证。
 
@@ -22,7 +22,7 @@ operation 暴露成 OpenClaw tools，也不包含任何凭据。项目仍需单�
 
 ## 前置条件
 
-1. 安装当前版本的 ClawHub CLI，并认证个人发布账号：
+1. 安装当前版本的 ClawHub CLI，并认证 `@unifyport` 发布账号：
 
    ```bash
    npm install --global clawhub
@@ -30,7 +30,7 @@ operation 暴露成 OpenClaw tools，也不包含任何凭据。项目仍需单�
    clawhub whoami
    ```
 
-2. GitHub Actions 使用同一个个人账号创建的 `CLAWHUB_TOKEN` repository secret。不得提交或打印该
+2. GitHub Actions 使用同一 `@unifyport` 账号创建的 `CLAWHUB_TOKEN` repository secret。不得提交或打印该
    token。
 3. 首次发布前，或 ClawHub 平台发生重大变化后，重新检查当前的
    [Skill 格式](https://docs.openclaw.ai/clawhub/skill-format)、
@@ -62,15 +62,15 @@ clawhub skill publish ./skills/unifyport-node-sdk \
   --json
 ```
 
-命令有意省略 `--owner`，由 ClawHub 根据当前认证账号解析个人 owner。正式发布获批前，dry-run 必须在不
-上传内容的情况下成功完成。
+命令有意省略 `--owner`。未认证的 dry-run 只校验 bundle，真实 workflow 会在上传前验证
+`clawhub whoami` 必须返回 `unifyport`。正式发布获批前，dry-run 必须在不上传内容的情况下成功完成。
 
 ## GitHub Actions 流程
 
 `.github/workflows/clawhub-skill-publish.yml` 包含两条路径：
 
 - pull request 使用固定版本的 ClawHub CLI 执行 `--dry-run`，不提供发布 token；
-- `workflow_dispatch` 只允许从 `main` 使用 `CLAWHUB_TOKEN` 执行真实发布。
+- `workflow_dispatch` 先验证 `CLAWHUB_TOKEN` 属于 `@unifyport`，再从 `main` 执行真实发布。
 
 两条路径都传入精确的 `skills/unifyport-node-sdk` 目录和展示名 `UnifyPort Node.js SDK`。CLI 固定为本
 仓库已验证的版本，避免上游变化或自动 title case 静默改变发布结果。workflow 不监听普通 push 或 tag，
@@ -81,12 +81,12 @@ clawhub skill publish ./skills/unifyport-node-sdk \
 
 ## 发布后验证
 
-手动 workflow 成功后，用 `clawhub whoami` 返回的账号替换 `<personal-handle>`，检查精确 release：
+手动 workflow 成功后，检查精确的 `@unifyport` release：
 
 ```bash
-clawhub inspect @<personal-handle>/unifyport-node-sdk --versions --files --json
+clawhub inspect @unifyport/unifyport-node-sdk --versions --files --json
 clawhub scan --slug unifyport-node-sdk --version 1.0.0 --json
-openclaw skills install @<personal-handle>/unifyport-node-sdk
+openclaw skills install @unifyport/unifyport-node-sdk
 ```
 
 确认公开文件列表、MIT-0 许可证、版本、来源信息和 Security Audit 状态。安装 smoke test 必须在一次性
