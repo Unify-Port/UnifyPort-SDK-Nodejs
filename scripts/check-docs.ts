@@ -45,6 +45,7 @@ const BILINGUAL_DOCUMENTS = [
   ["docs/architecture.md", "docs/zh-CN/architecture.md"],
   ["docs/clawhub-publishing.md", "docs/zh-CN/clawhub-publishing.md"],
   ["docs/contract-maintenance.md", "docs/zh-CN/contract-maintenance.md"],
+  ["docs/release-notes.md", "docs/zh-CN/release-notes.md"],
   ["docs/security.md", "docs/zh-CN/security.md"],
   ["skills/unifyport-node-sdk/SKILL.md", "skills/unifyport-node-sdk/SKILL.zh-CN.md"],
   ["skills/unifyport-mcp/SKILL.md", "skills/unifyport-mcp/SKILL.zh-CN.md"]

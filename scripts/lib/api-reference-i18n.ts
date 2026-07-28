@@ -75,6 +75,8 @@ const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
   "会话详情。": "Conversation details.",
   列出会话成员: "List conversation members",
   "会话成员分页列表。": "A paginated list of conversation members.",
+  "成员的 provider 侧稳定标识。WhatsApp 优先返回 LID，缺少 LID 映射时回退 JID；纯手机号位于 `extra.phone`。":
+    "The stable provider-side member identifier. WhatsApp prefers LID and falls back to JID when no LID mapping is available; a plain phone number is available in `extra.phone`.",
   标记会话已读: "Mark a conversation as read",
   标记会话未读: "Mark a conversation as unread",
   静音会话: "Mute a conversation",
@@ -189,8 +191,10 @@ const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
   "provider 侧账号公开标识。": "The provider-side public account identifier.",
   "授权流程状态，例如 pending_auth、awaiting_qr_scan、authorized、failed。":
     "The authorization flow status, for example `pending_auth`, `awaiting_qr_scan`, `authorized`, or `failed`.",
-  "可选，省略时标记整个会话已读。":
-    "Optional. When omitted, the entire conversation is marked as read.",
+  "可选。WhatsApp 中与 up_to_message_sender_id 一起发送目标消息的 read receipt；省略两者时标记整个会话已读。":
+    "Optional. For WhatsApp, send this together with `up_to_message_sender_id` as the target message read receipt; omit both fields to mark the whole conversation as read.",
+  "up_to_message_id 对应消息的 provider 原始发送者 ID；群聊应传 webhook data.sender.id。与 up_to_message_id 成对必填。":
+    "The original provider sender ID for the message identified by `up_to_message_id`. For group messages, use webhook `data.sender.id`. This field and `up_to_message_id` must be supplied together.",
   "相对静音时长，单位秒；0 表示永久静音。":
     "The relative mute duration in seconds. A value of `0` means muted indefinitely.",
   "RFC3339 绝对结束时间，与 `duration` 互斥。":
