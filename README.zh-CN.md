@@ -201,6 +201,7 @@ unifyport-sdk-node/
 - [架构说明](docs/zh-CN/architecture.md)
 - [安全边界](docs/zh-CN/security.md)
 - [契约维护流程](docs/zh-CN/contract-maintenance.md)
+- [版本说明](docs/zh-CN/release-notes.md)
 - [ClawHub 发布说明](docs/zh-CN/clawhub-publishing.md)
 - [验收报告](docs/zh-CN/acceptance-report.md)
 - [SDK skill](skills/unifyport-node-sdk/SKILL.md)

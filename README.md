@@ -212,6 +212,7 @@ unifyport-sdk-node/
 - [Architecture](docs/architecture.md)
 - [Security boundaries](docs/security.md)
 - [Contract maintenance](docs/contract-maintenance.md)
+- [Release notes](docs/release-notes.md)
 - [ClawHub publishing](docs/clawhub-publishing.md)
 - [Acceptance report](docs/acceptance-report.md)
 - [SDK skill](skills/unifyport-node-sdk/SKILL.md)

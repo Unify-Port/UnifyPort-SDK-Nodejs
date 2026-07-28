@@ -298,21 +298,21 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `200` 的响应字段：
 
-| 字段                                    | 必有 | 类型                           | 约束 | 说明                                           |
-| --------------------------------------- | ---- | ------------------------------ | ---- | ---------------------------------------------- |
-| `result.data.request_id`                | 否   | `string`                       | -    | 服务端生成的请求 ID。                          |
-| `result.data.client_request_id`         | 否   | `string`                       | -    | 当客户端请求头传入合法 `X-Request-Id` 时回显。 |
-| `result.data.data`                      | 是   | `ConversationMemberListResult` | -    | -                                              |
-| `result.data.data.items`                | 是   | `Array<ConversationMember>`    | -    | -                                              |
-| `result.data.data.items[].peer_id`      | 是   | `string`                       | -    | -                                              |
-| `result.data.data.items[].username`     | 否   | `string`                       | -    | -                                              |
-| `result.data.data.items[].display_name` | 是   | `string`                       | -    | -                                              |
-| `result.data.data.items[].avatar_url`   | 是   | `string`                       | -    | -                                              |
-| `result.data.data.items[].role`         | 否   | `string`                       | -    | -                                              |
-| `result.data.data.items[].joined_at`    | 否   | `string (date-time)`           | -    | -                                              |
-| `result.data.data.items[].extra`        | 否   | `FreeFormObject`               | -    | -                                              |
-| `result.data.data.next_cursor`          | 否   | `string`                       | -    | -                                              |
-| `result.data.data.has_more`             | 是   | `boolean`                      | -    | -                                              |
+| 字段                                    | 必有 | 类型                           | 约束 | 说明                                                                                                     |
+| --------------------------------------- | ---- | ------------------------------ | ---- | -------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`                | 否   | `string`                       | -    | 服务端生成的请求 ID。                                                                                    |
+| `result.data.client_request_id`         | 否   | `string`                       | -    | 当客户端请求头传入合法 `X-Request-Id` 时回显。                                                           |
+| `result.data.data`                      | 是   | `ConversationMemberListResult` | -    | -                                                                                                        |
+| `result.data.data.items`                | 是   | `Array<ConversationMember>`    | -    | -                                                                                                        |
+| `result.data.data.items[].peer_id`      | 是   | `string`                       | -    | 成员的 provider 侧稳定标识。WhatsApp 优先返回 LID，缺少 LID 映射时回退 JID；纯手机号位于 `extra.phone`。 |
+| `result.data.data.items[].username`     | 否   | `string`                       | -    | -                                                                                                        |
+| `result.data.data.items[].display_name` | 是   | `string`                       | -    | -                                                                                                        |
+| `result.data.data.items[].avatar_url`   | 是   | `string`                       | -    | -                                                                                                        |
+| `result.data.data.items[].role`         | 否   | `string`                       | -    | -                                                                                                        |
+| `result.data.data.items[].joined_at`    | 否   | `string (date-time)`           | -    | -                                                                                                        |
+| `result.data.data.items[].extra`        | 否   | `FreeFormObject`               | -    | -                                                                                                        |
+| `result.data.data.next_cursor`          | 否   | `string`                       | -    | -                                                                                                        |
+| `result.data.data.has_more`             | 是   | `boolean`                      | -    | -                                                                                                        |
 
 ### TypeScript 示例
 
@@ -445,10 +445,11 @@ console.log(result.data.data);
 
 JSON 请求体。
 
-| 字段                    | 必填 | 类型     | 约束 | 说明                           |
-| ----------------------- | ---- | -------- | ---- | ------------------------------ |
-| `body.conversation_id`  | 是   | `string` | -    | -                              |
-| `body.up_to_message_id` | 否   | `string` | -    | 可选，省略时标记整个会话已读。 |
+| 字段                           | 必填 | 类型     | 约束 | 说明                                                                                                                |
+| ------------------------------ | ---- | -------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `body.conversation_id`         | 是   | `string` | -    | -                                                                                                                   |
+| `body.up_to_message_id`        | 否   | `string` | -    | 可选。WhatsApp 中与 up_to_message_sender_id 一起发送目标消息的 read receipt；省略两者时标记整个会话已读。           |
+| `body.up_to_message_sender_id` | 否   | `string` | -    | up_to_message_id 对应消息的 provider 原始发送者 ID；群聊应传 webhook data.sender.id。与 up_to_message_id 成对必填。 |
 
 ### 返回值
 

@@ -1144,6 +1144,7 @@ export interface components {
             extra?: components["schemas"]["FreeFormObject"];
             /** Format: date-time */
             joined_at?: string;
+            /** @description 成员的 provider 侧稳定标识。WhatsApp 优先返回 LID，缺少 LID 映射时回退 JID；纯手机号位于 `extra.phone`。 */
             peer_id: string;
             role?: string;
             username?: string;
@@ -1166,8 +1167,10 @@ export interface components {
             mute_until?: string;
         };
         ConversationReadRequest: components["schemas"]["ConversationIdRequest"] & {
-            /** @description 可选，省略时标记整个会话已读。 */
+            /** @description 可选。WhatsApp 中与 up_to_message_sender_id 一起发送目标消息的 read receipt；省略两者时标记整个会话已读。 */
             up_to_message_id?: string;
+            /** @description up_to_message_id 对应消息的 provider 原始发送者 ID；群聊应传 webhook data.sender.id。与 up_to_message_id 成对必填。 */
+            up_to_message_sender_id?: string;
         };
         /** @enum {string} */
         ConversationType: "user" | "group" | "channel";

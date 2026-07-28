@@ -56,6 +56,25 @@ describe("generated operation coverage", () => {
     expect(deviceOperations.updateGroupMembers.mutability).toBe("destructive");
     expect(deviceOperations.updateGroupJoinRequests.mutability).toBe("destructive");
   });
+
+  it("preserves paired message receipt fields in generated metadata", () => {
+    // 字段依赖必须进入发布 metadata，避免下游工具只看到两个互不相关的可选字段。
+    expect(deviceOperations.markConversationRead.inputSchema).toMatchObject({
+      $defs: {
+        ConversationReadRequest: {
+          allOf: [
+            expect.any(Object),
+            {
+              dependentRequired: {
+                up_to_message_id: ["up_to_message_sender_id"],
+                up_to_message_sender_id: ["up_to_message_id"]
+              }
+            }
+          ]
+        }
+      }
+    });
+  });
 });
 
 describe("transport security and response handling", () => {
