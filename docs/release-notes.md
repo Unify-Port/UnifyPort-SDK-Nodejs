@@ -2,7 +2,7 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
-## Unreleased
+## 0.2.0 - 2026-07-28
 
 ### Conversation read receipts and WhatsApp member identity
 
@@ -13,4 +13,4 @@
 
 Compatibility: this is a behavioral breaking change for callers that previously supplied `up_to_message_id` alone. Migrate those calls by supplying both fields or by omitting both fields for conversation-level read state. Authentication, success responses, retry behavior, and MCP exposure are unchanged.
 
-This section describes source changes that have not yet been assigned to or published as an npm version.
+The npm publication, Git tag, and clean-install verification for this version are tracked separately from this source release preparation.
