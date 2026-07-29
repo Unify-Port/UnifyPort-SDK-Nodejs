@@ -178,8 +178,9 @@ const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
   "稳定的机器可读错误码。": "A stable, machine-readable error code.",
   "面向开发者的错误说明，不建议作为客户端分支依据。":
     "A developer-facing error description. Do not use it to control client-side branching.",
-  "provider 名称；实际可用范围以当前账号能力为准。":
-    "The provider name. Actual availability depends on the capabilities of the current account.",
+  // 对外文档不再把内部占位 adapter 或未上线渠道生成成可选 provider。
+  "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。":
+    "Publicly available provider name. Use the provider regions endpoint to determine where new accounts can be allocated.",
   "可展示的 Key 前缀，不是完整 API Key。": "A display-safe key prefix, not the full API key.",
   "生成 API Key 时使用的前缀。": "The prefix used when generating the API key.",
   "完整明文 API Key，仅创建或轮换响应中出现一次。":

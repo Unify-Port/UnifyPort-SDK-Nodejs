@@ -75,6 +75,44 @@ describe("generated operation coverage", () => {
       }
     });
   });
+
+  it("keeps public provider and webhook event enums aligned", () => {
+    // 精确枚举可防止内部 provider 重新进入公开类型，也避免历史事件在生成时丢失。
+    expect(deviceOperations.createAccount.inputSchema).toMatchObject({
+      $defs: {
+        ProviderName: {
+          enum: ["telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"]
+        }
+      }
+    });
+    expect(deviceOperations.createWebhookEndpoint.inputSchema).toMatchObject({
+      $defs: {
+        StandardEventType: {
+          enum: [
+            "*",
+            "message.received",
+            "message.updated",
+            "message.deleted",
+            "message.read",
+            "message.reaction",
+            "message.delivered",
+            "conversation.updated",
+            "conversation.deleted",
+            "conversation.cleared",
+            "conversation.history",
+            "group.updated",
+            "group.join_request",
+            "account.status.updated",
+            "account.started",
+            "account.history.synced",
+            "account.auth.required",
+            "account.auth.succeeded",
+            "account.auth.failed"
+          ]
+        }
+      }
+    });
+  });
 });
 
 describe("transport security and response handling", () => {

@@ -1300,10 +1300,10 @@ export interface components {
             ok: true;
         };
         /**
-         * @description provider 名称；实际可用范围以当前账号能力为准。
+         * @description 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。
          * @enum {string}
          */
-        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "x" | "zalo" | "tiktok" | "whatsapp_protocol";
+        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "x" | "zalo" | "tiktok";
         ProviderRegionsResponse: {
             provider: components["schemas"]["ProviderName"];
             regions: components["schemas"]["RegionAvailability"][];
@@ -1356,7 +1356,7 @@ export interface components {
             status: string;
         };
         /** @enum {string} */
-        StandardEventType: "message.received" | "message.updated" | "message.deleted" | "message.read" | "message.reaction" | "message.delivered" | "conversation.updated" | "conversation.deleted" | "conversation.cleared" | "group.updated" | "group.join_request" | "account.status.updated" | "account.started" | "account.auth.required" | "account.auth.succeeded" | "account.auth.failed";
+        StandardEventType: "*" | "message.received" | "message.updated" | "message.deleted" | "message.read" | "message.reaction" | "message.delivered" | "conversation.updated" | "conversation.deleted" | "conversation.cleared" | "conversation.history" | "group.updated" | "group.join_request" | "account.status.updated" | "account.started" | "account.history.synced" | "account.auth.required" | "account.auth.succeeded" | "account.auth.failed";
         WebhookEndpoint: {
             id: string;
             retry_policy?: components["schemas"]["FreeFormObject"];

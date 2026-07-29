@@ -2,6 +2,17 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
+## 未发布
+
+### 公开 provider 与 webhook 事件名称
+
+- `ProviderName` 移除 `whatsapp_protocol`；应通过 provider regions 接口发现可分配新账号的 provider。
+- `StandardEventType` 新增 `*`、`conversation.history` 与 `account.history.synced`。
+
+兼容性：移除 `whatsapp_protocol` 会缩小公开 provider enum，对曾引用该值的调用方属于类型层 breaking change。新增 webhook 事件 enum 值属于增量变更，但使用 exhaustive switch 的调用方可能需要处理新值。鉴权、重试行为、secret 分类与 MCP exposure 均未变化。
+
+本节描述尚未分配或发布 npm 版本的源码变更。
+
 ## 0.2.0 - 2026-07-28
 
 ### 会话已读回执与 WhatsApp 成员标识
