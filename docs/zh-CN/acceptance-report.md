@@ -3,7 +3,7 @@
 [English](../acceptance-report.md) | [简体中文](acceptance-report.md)
 
 - 验收基线日期：2026-07-28
-- 发布状态复核日期：2026-07-28
+- 发布状态复核日期：2026-07-29
 
 > 本文记录发布前验收基线和当前分发边界；最新 SDK 版本与安装方式以根 `README.md` 为准。
 
@@ -11,7 +11,7 @@
 
 SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的本地验收基线。项目可以继续接收新的公开 API 契约 operation；新增 operation 默认不重试、默认不进入 MCP，必须经过显式策略审查。
 
-`@unifyport/sdk-node` `0.2.0` 已按 MIT 许可证发布到 npm。`@unifyport/mcp-server` 仍保持 `private: true`；发布 SDK 不会扩大 MCP Server 的分发边界。
+`@unifyport/sdk-node` `0.3.0` 已按 MIT 许可证发布到 npm。`@unifyport/mcp-server` 仍保持 `private: true`；发布 SDK 不会扩大 MCP Server 的分发边界。
 
 ## 验收范围
 
@@ -31,7 +31,7 @@ SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的
 | Device API operation |        64 |
 | MCP 显式 allowlist   |         4 |
 | MCP 默认或永久排除   |        60 |
-| 自动化测试           | 34 个通过 |
+| 自动化测试           | 35 个通过 |
 
 完整 operation 映射见 [API 覆盖率](api-coverage.md)。
 
@@ -60,7 +60,7 @@ SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的
 | `pnpm generate:check` | 生成物可复现且无漂移                                  |
 | `pnpm lint`           | ESLint 通过                                           |
 | `pnpm format:check`   | Prettier 通过                                         |
-| `pnpm test`           | 34/34 通过                                            |
+| `pnpm test`           | 35/35 通过                                            |
 | statements coverage   | 93.67%                                                |
 | branches coverage     | 85.15%                                                |
 | functions coverage    | 97.89%                                                |
@@ -70,15 +70,16 @@ SDK、MCP Server、公开 skills、生成链路与质量门禁已通过完整的
 | `pnpm package:check`  | 两个 tarball 的 `publint`、类型入口与公开边界扫描通过 |
 | `pnpm check`          | 完整门禁通过                                          |
 
-已发布的 `0.2.0` 包还在全新临时项目中从公开 registry 安装，并使用成对的会话已读回执字段通过严格 TypeScript 编译。
+已发布的 `0.3.0` 包还在全新临时项目中从公开 registry 安装，使用当前 provider 与 webhook event 类型通过严格 TypeScript 编译，并通过公开 client 与 operation catalog 导出的运行时导入检查。
 
 当前 CI matrix 在 Node.js 22.12.0 与 24.x 上执行 `pnpm check`。仓库固定使用 pnpm 10.34.5，使质量门禁可以在声明的最低 Node.js 版本上运行；工具链对齐后，两个 matrix 任务均已通过。
 
 ## 外部验证状态
 
 - 自动化测试不使用生产 credential，也不调用生产 API；通过注入式 `fetch` 覆盖协议、安全与错误边界；
-- `@unifyport/sdk-node@0.2.0` 已发布到 npm，npm `latest` dist-tag 已指向该版本，并在 Git 中标记为 `v0.2.0`；
-- 全新项目从公开 registry 安装到精确的 `0.2.0`，并通过 TypeScript `5.9.3` 编译；
+- `@unifyport/sdk-node@0.3.0` 已发布到 npm，npm `latest` dist-tag 已指向该版本，并在 Git 发布提交 `9c7b22b` 上标记为 `v0.3.0`；
+- 公开 registry shasum 与发布前 dry-run 一致，全新项目安装到精确的 `0.3.0`；
+- 全新安装通过 TypeScript `5.9.3` 编译和运行时导入检查，未调用生产 API，也未使用生产 credential；
 - `@unifyport/mcp-server` 未发布并保持私有。
 
 每次发布都应重新复核这些边界，以及当次 CI 结果和 npm package 内容。
