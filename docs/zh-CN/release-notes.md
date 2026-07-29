@@ -2,7 +2,7 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
-## 未发布
+## 0.3.0 - 2026-07-29
 
 ### 公开 provider 与 webhook 事件名称
 
@@ -11,7 +11,7 @@
 
 兼容性：移除 `whatsapp_protocol` 会缩小公开 provider enum，对曾引用该值的调用方属于类型层 breaking change。新增 webhook 事件 enum 值属于增量变更，但使用 exhaustive switch 的调用方可能需要处理新值。鉴权、重试行为、secret 分类与 MCP exposure 均未变化。
 
-本节描述尚未分配或发布 npm 版本的源码变更。
+该版本的 npm 发布、Git tag 与全新安装验证与本次源码发布准备分开记录。
 
 ## 0.2.0 - 2026-07-28
 

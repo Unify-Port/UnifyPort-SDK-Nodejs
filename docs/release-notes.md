@@ -2,7 +2,7 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
-## Unreleased
+## 0.3.0 - 2026-07-29
 
 ### Public providers and webhook event names
 
@@ -11,7 +11,7 @@
 
 Compatibility: removing `whatsapp_protocol` narrows the public provider enum and is a breaking type-level change for callers that referenced it. The new webhook event enum values are additive, but exhaustive event switches may need to handle the new values. Authentication, retry behavior, secret classification, and MCP exposure are unchanged.
 
-This section describes source changes that have not yet been assigned to or published as an npm version.
+The npm publication, Git tag, and clean-install verification for this version are tracked separately from this source release preparation.
 
 ## 0.2.0 - 2026-07-28
 
