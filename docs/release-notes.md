@@ -2,6 +2,17 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
+## Unreleased
+
+### Public providers and webhook event names
+
+- `ProviderName` removes `whatsapp_protocol`. Use the provider regions endpoint to discover providers that can allocate new accounts.
+- `StandardEventType` adds `*`, `conversation.history`, and `account.history.synced`.
+
+Compatibility: removing `whatsapp_protocol` narrows the public provider enum and is a breaking type-level change for callers that referenced it. The new webhook event enum values are additive, but exhaustive event switches may need to handle the new values. Authentication, retry behavior, secret classification, and MCP exposure are unchanged.
+
+This section describes source changes that have not yet been assigned to or published as an npm version.
+
 ## 0.2.0 - 2026-07-28
 
 ### Conversation read receipts and WhatsApp member identity

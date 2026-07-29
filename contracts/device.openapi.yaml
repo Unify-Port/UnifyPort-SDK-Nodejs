@@ -2240,8 +2240,9 @@ components:
 
     ProviderName:
       type: string
-      enum: [telegram, whatsapp, line, twitter, x, zalo, tiktok, whatsapp_protocol]
-      description: provider 名称；实际可用范围以当前账号能力为准。
+      # TikTok 依当前产品口径保留在公开枚举，具体可用性仍以区域接口和账号权限为准。
+      enum: [telegram, whatsapp, line, twitter, x, zalo, tiktok]
+      description: 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。
 
     Workspace:
       type: object
@@ -3091,6 +3092,7 @@ components:
     StandardEventType:
       type: string
       enum:
+        - "*"
         - message.received
         - message.updated
         - message.deleted
@@ -3100,10 +3102,12 @@ components:
         - conversation.updated
         - conversation.deleted
         - conversation.cleared
+        - conversation.history
         - group.updated
         - group.join_request
         - account.status.updated
         - account.started
+        - account.history.synced
         - account.auth.required
         - account.auth.succeeded
         - account.auth.failed

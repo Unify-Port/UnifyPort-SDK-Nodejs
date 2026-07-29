@@ -462,10 +462,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -610,10 +609,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -989,6 +987,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -998,10 +997,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -1107,6 +1108,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -1116,10 +1118,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -1272,6 +1276,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -1281,10 +1286,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -1886,10 +1893,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -2917,6 +2923,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -2926,10 +2933,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -3464,10 +3473,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -4943,10 +4951,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         }
       }
     },
@@ -5035,10 +5042,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RegionAvailability": {
           "type": "object",
@@ -5179,6 +5185,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -5188,10 +5195,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -6249,10 +6258,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -6432,10 +6440,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -7903,10 +7910,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -8086,10 +8092,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -8859,10 +8864,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -9007,10 +9011,9 @@ export const deviceOperations = {
             "twitter",
             "x",
             "zalo",
-            "tiktok",
-            "whatsapp_protocol"
+            "tiktok"
           ],
-          "description": "provider 名称；实际可用范围以当前账号能力为准。"
+          "description": "正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。"
         },
         "RuntimeStatus": {
           "type": "string",
@@ -9724,6 +9727,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -9733,10 +9737,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"
@@ -9842,6 +9848,7 @@ export const deviceOperations = {
         "StandardEventType": {
           "type": "string",
           "enum": [
+            "*",
             "message.received",
             "message.updated",
             "message.deleted",
@@ -9851,10 +9858,12 @@ export const deviceOperations = {
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
+            "conversation.history",
             "group.updated",
             "group.join_request",
             "account.status.updated",
             "account.started",
+            "account.history.synced",
             "account.auth.required",
             "account.auth.succeeded",
             "account.auth.failed"

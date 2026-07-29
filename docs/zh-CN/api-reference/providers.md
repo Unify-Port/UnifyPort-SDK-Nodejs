@@ -31,9 +31,9 @@ provider 元数据查询。
 
 ### 参数
 
-| SDK 字段               | 位置 | 必填 | 类型           | 示例         | 约束                                                                                       | 说明                                            |
-| ---------------------- | ---- | ---- | -------------- | ------------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| `params.path.provider` | path | 是   | `ProviderName` | `"telegram"` | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol" | provider 名称；实际可用范围以当前账号能力为准。 |
+| SDK 字段               | 位置 | 必填 | 类型           | 示例         | 约束                                                                  | 说明                                                                       |
+| ---------------------- | ---- | ---- | -------------- | ------------ | --------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `params.path.provider` | path | 是   | `ProviderName` | `"telegram"` | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok" | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
 
 ### 请求体
 
@@ -52,16 +52,16 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `200` 的响应字段：
 
-| 字段                                     | 必有 | 类型                        | 约束                                                                                       | 说明                                            |
-| ---------------------------------------- | ---- | --------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| `result.data.request_id`                 | 否   | `string`                    | -                                                                                          | 服务端生成的请求 ID。                           |
-| `result.data.client_request_id`          | 否   | `string`                    | -                                                                                          | 当客户端请求头传入合法 `X-Request-Id` 时回显。  |
-| `result.data.data`                       | 是   | `ProviderRegionsResponse`   | -                                                                                          | -                                               |
-| `result.data.data.provider`              | 是   | `ProviderName`              | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol" | provider 名称；实际可用范围以当前账号能力为准。 |
-| `result.data.data.regions`               | 是   | `Array<RegionAvailability>` | -                                                                                          | -                                               |
-| `result.data.data.regions[].region`      | 是   | `string`                    | -                                                                                          | -                                               |
-| `result.data.data.regions[].supported`   | 是   | `boolean`                   | -                                                                                          | -                                               |
-| `result.data.data.regions[].allocatable` | 是   | `boolean`                   | -                                                                                          | -                                               |
+| 字段                                     | 必有 | 类型                        | 约束                                                                  | 说明                                                                       |
+| ---------------------------------------- | ---- | --------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `result.data.request_id`                 | 否   | `string`                    | -                                                                     | 服务端生成的请求 ID。                                                      |
+| `result.data.client_request_id`          | 否   | `string`                    | -                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。                             |
+| `result.data.data`                       | 是   | `ProviderRegionsResponse`   | -                                                                     | -                                                                          |
+| `result.data.data.provider`              | 是   | `ProviderName`              | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok" | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `result.data.data.regions`               | 是   | `Array<RegionAvailability>` | -                                                                     | -                                                                          |
+| `result.data.data.regions[].region`      | 是   | `string`                    | -                                                                     | -                                                                          |
+| `result.data.data.regions[].supported`   | 是   | `boolean`                   | -                                                                     | -                                                                          |
+| `result.data.data.regions[].allocatable` | 是   | `boolean`                   | -                                                                     | -                                                                          |
 
 ### TypeScript 示例
 

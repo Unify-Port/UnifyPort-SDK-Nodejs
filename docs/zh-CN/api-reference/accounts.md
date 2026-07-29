@@ -41,19 +41,19 @@ provider 账号资源管理。
 
 JSON 请求体。
 
-| 字段                        | 必填 | 类型             | 约束                                                                                                  | 说明                                            |
-| --------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `body.name`                 | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `body.region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `body.status`               | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `body.auth_mode`            | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `body.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `body.provider_account_ref` | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.provider_data`        | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `body.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                        | 必填 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| --------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `body.name`                 | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `body.region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `body.status`               | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `body.auth_mode`            | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `body.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `body.provider_account_ref` | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.provider_data`        | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `body.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 ### 返回值
 
@@ -70,23 +70,23 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `201` 的响应字段：
 
-| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                            |
-| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                           |
-| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。  |
-| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                               |
-| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。 |
-| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。          |
-| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                       |
-| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                                                      |
+| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。                             |
+| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                                                          |
+| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。                            |
+| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。                                     |
+| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                                                  |
+| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 ### TypeScript 示例
 
@@ -195,23 +195,23 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `200` 的响应字段：
 
-| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                            |
-| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                           |
-| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。  |
-| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                               |
-| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。 |
-| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。          |
-| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                       |
-| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                                                      |
+| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。                             |
+| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                                                          |
+| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。                            |
+| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。                                     |
+| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                                                  |
+| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 > 此 operation 可能返回一次性或敏感数据。只在受控位置处理，不要记录完整响应。
 
@@ -265,23 +265,23 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `200` 的响应字段：
 
-| 字段                                      | 必有 | 类型             | 约束                                                                                                  | 说明                                            |
-| ----------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `result.data.request_id`                  | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                           |
-| `result.data.client_request_id`           | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。  |
-| `result.data.data`                        | 是   | `Array<Account>` | -                                                                                                     | -                                               |
-| `result.data.data[].id`                   | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data[].name`                 | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data[].provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `result.data.data[].region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data[].status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。 |
-| `result.data.data[].runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `result.data.data[].auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。          |
-| `result.data.data[].capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `result.data.data[].metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data[].provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                       |
-| `result.data.data[].proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data[].provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                                      | 必有 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| ----------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `result.data.request_id`                  | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                                                      |
+| `result.data.client_request_id`           | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。                             |
+| `result.data.data`                        | 是   | `Array<Account>` | -                                                                                                     | -                                                                          |
+| `result.data.data[].id`                   | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data[].name`                 | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data[].provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `result.data.data[].region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data[].status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。                            |
+| `result.data.data[].runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `result.data.data[].auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。                                     |
+| `result.data.data[].capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `result.data.data[].metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data[].provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                                                  |
+| `result.data.data[].proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data[].provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 ### TypeScript 示例
 
@@ -317,19 +317,19 @@ console.log(result.data.data);
 
 JSON 请求体。
 
-| 字段                        | 必填 | 类型             | 约束                                                                                                  | 说明                                            |
-| --------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `body.name`                 | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `body.region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `body.status`               | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `body.auth_mode`            | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `body.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `body.provider_account_ref` | 否   | `string`         | -                                                                                                     | -                                               |
-| `body.provider_data`        | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `body.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                        | 必填 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| --------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `body.name`                 | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `body.region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `body.status`               | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `body.auth_mode`            | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `body.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `body.provider_account_ref` | 否   | `string`         | -                                                                                                     | -                                                                          |
+| `body.provider_data`        | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `body.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 ### 返回值
 
@@ -345,23 +345,23 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 
 成功状态 `200` 的响应字段：
 
-| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                            |
-| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                           |
-| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。  |
-| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                               |
-| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok", "whatsapp_protocol"            | provider 名称；实际可用范围以当前账号能力为准。 |
-| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                               |
-| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。 |
-| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                               |
-| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。          |
-| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                               |
-| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                       |
-| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
-| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                               |
+| 字段                                    | 必有 | 类型             | 约束                                                                                                  | 说明                                                                       |
+| --------------------------------------- | ---- | ---------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `result.data.request_id`                | 否   | `string`         | -                                                                                                     | 服务端生成的请求 ID。                                                      |
+| `result.data.client_request_id`         | 否   | `string`         | -                                                                                                     | 当客户端请求头传入合法 `X-Request-Id` 时回显。                             |
+| `result.data.data`                      | 是   | `Account`        | -                                                                                                     | -                                                                          |
+| `result.data.data.id`                   | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.name`                 | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.provider`             | 是   | `ProviderName`   | enum="telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"                                 | 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。 |
+| `result.data.data.region`               | 是   | `string`         | -                                                                                                     | -                                                                          |
+| `result.data.data.status`               | 是   | `string`         | -                                                                                                     | 账号资源状态，例如 active、inactive、disabled。                            |
+| `result.data.data.runtime_status`       | 否   | `RuntimeStatus`  | enum="unknown", "starting", "running", "stopping", "stopped", "reconnecting", "disconnected", "error" | -                                                                          |
+| `result.data.data.auth_mode`            | 否   | `string`         | -                                                                                                     | 授权模式，例如 qrcode、code、session。                                     |
+| `result.data.data.capabilities`         | 否   | `Array<string>`  | -                                                                                                     | -                                                                          |
+| `result.data.data.metadata`             | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_account_ref` | 否   | `string`         | -                                                                                                     | provider 侧账号公开标识。                                                  |
+| `result.data.data.proxy`                | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
+| `result.data.data.provider_profile`     | 否   | `FreeFormObject` | -                                                                                                     | -                                                                          |
 
 ### TypeScript 示例
 
