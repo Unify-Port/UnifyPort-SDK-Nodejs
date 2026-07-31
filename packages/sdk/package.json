@@ -1,6 +1,6 @@
 {
   "name": "@unifyport/sdk-node",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "description": "Type-safe Node.js SDK for the UnifyPort Device API.",
   "type": "module",
