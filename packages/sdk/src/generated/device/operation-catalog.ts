@@ -394,7 +394,7 @@ export const deviceOperations = {
     "mutability": "write",
     "retryable": false,
     "secretInput": true,
-    "secretOutput": false,
+    "secretOutput": true,
     "mcpExposure": "never",
     "inputSchema": {
       "type": "object",
@@ -596,7 +596,7 @@ export const deviceOperations = {
               "$ref": "#/$defs/FreeFormObject"
             },
             "provider_profile": {
-              "$ref": "#/$defs/FreeFormObject"
+              "$ref": "#/$defs/ProviderProfile"
             }
           }
         },
@@ -628,6 +628,40 @@ export const deviceOperations = {
         },
         "FreeFormObject": {
           "type": "object",
+          "additionalProperties": true
+        },
+        "ProviderProfile": {
+          "type": "object",
+          "description": "账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。"
+            },
+            "phone": {
+              "type": "string",
+              "description": "已归一化的账号手机号。"
+            },
+            "username": {
+              "type": "string"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "first_name": {
+              "type": "string"
+            },
+            "last_name": {
+              "type": "string"
+            },
+            "avatar_url": {
+              "type": "string",
+              "description": "账号头像 URL。"
+            },
+            "bio": {
+              "type": "string"
+            }
+          },
           "additionalProperties": true
         }
       }
@@ -1880,7 +1914,7 @@ export const deviceOperations = {
               "$ref": "#/$defs/FreeFormObject"
             },
             "provider_profile": {
-              "$ref": "#/$defs/FreeFormObject"
+              "$ref": "#/$defs/ProviderProfile"
             }
           }
         },
@@ -1912,6 +1946,40 @@ export const deviceOperations = {
         },
         "FreeFormObject": {
           "type": "object",
+          "additionalProperties": true
+        },
+        "ProviderProfile": {
+          "type": "object",
+          "description": "账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。"
+            },
+            "phone": {
+              "type": "string",
+              "description": "已归一化的账号手机号。"
+            },
+            "username": {
+              "type": "string"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "first_name": {
+              "type": "string"
+            },
+            "last_name": {
+              "type": "string"
+            },
+            "avatar_url": {
+              "type": "string",
+              "description": "账号头像 URL。"
+            },
+            "bio": {
+              "type": "string"
+            }
+          },
           "additionalProperties": true
         }
       }
@@ -3339,7 +3407,7 @@ export const deviceOperations = {
     "mutability": "read",
     "retryable": true,
     "secretInput": false,
-    "secretOutput": false,
+    "secretOutput": true,
     "mcpExposure": "never",
     "inputSchema": {
       "type": "object",
@@ -3460,7 +3528,7 @@ export const deviceOperations = {
               "$ref": "#/$defs/FreeFormObject"
             },
             "provider_profile": {
-              "$ref": "#/$defs/FreeFormObject"
+              "$ref": "#/$defs/ProviderProfile"
             }
           }
         },
@@ -3492,6 +3560,40 @@ export const deviceOperations = {
         },
         "FreeFormObject": {
           "type": "object",
+          "additionalProperties": true
+        },
+        "ProviderProfile": {
+          "type": "object",
+          "description": "账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。"
+            },
+            "phone": {
+              "type": "string",
+              "description": "已归一化的账号手机号。"
+            },
+            "username": {
+              "type": "string"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "first_name": {
+              "type": "string"
+            },
+            "last_name": {
+              "type": "string"
+            },
+            "avatar_url": {
+              "type": "string",
+              "description": "账号头像 URL。"
+            },
+            "bio": {
+              "type": "string"
+            }
+          },
           "additionalProperties": true
         }
       }
@@ -6776,7 +6878,7 @@ export const deviceOperations = {
     "mutability": "write",
     "retryable": false,
     "secretInput": true,
-    "secretOutput": false,
+    "secretOutput": true,
     "mcpExposure": "never",
     "inputSchema": {
       "type": "object",
@@ -6892,7 +6994,7 @@ export const deviceOperations = {
           "properties": {
             "reply_token": {
               "type": "string",
-              "description": "来自入站事件 `data.message.reply_token` 的不透明句柄。"
+              "description": "来自入站事件 `data.message.reply_token` 或发送成功后 `SendMessageResult.reply_token` 的不透明句柄；调用时应原样回传。"
             }
           }
         },
@@ -7055,6 +7157,10 @@ export const deviceOperations = {
             },
             "provider_ref": {
               "type": "string"
+            },
+            "reply_token": {
+              "type": "string",
+              "description": "WhatsApp 发送成功后可能同步返回不透明引用句柄；无法生成稳定句柄时省略。该值按敏感数据处理，不要写入日志。"
             }
           }
         }
@@ -8773,7 +8879,7 @@ export const deviceOperations = {
     "mutability": "write",
     "retryable": false,
     "secretInput": true,
-    "secretOutput": false,
+    "secretOutput": true,
     "mcpExposure": "never",
     "inputSchema": {
       "type": "object",
@@ -8998,7 +9104,7 @@ export const deviceOperations = {
               "$ref": "#/$defs/FreeFormObject"
             },
             "provider_profile": {
-              "$ref": "#/$defs/FreeFormObject"
+              "$ref": "#/$defs/ProviderProfile"
             }
           }
         },
@@ -9030,6 +9136,40 @@ export const deviceOperations = {
         },
         "FreeFormObject": {
           "type": "object",
+          "additionalProperties": true
+        },
+        "ProviderProfile": {
+          "type": "object",
+          "description": "账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。"
+            },
+            "phone": {
+              "type": "string",
+              "description": "已归一化的账号手机号。"
+            },
+            "username": {
+              "type": "string"
+            },
+            "display_name": {
+              "type": "string"
+            },
+            "first_name": {
+              "type": "string"
+            },
+            "last_name": {
+              "type": "string"
+            },
+            "avatar_url": {
+              "type": "string",
+              "description": "账号头像 URL。"
+            },
+            "bio": {
+              "type": "string"
+            }
+          },
           "additionalProperties": true
         }
       }

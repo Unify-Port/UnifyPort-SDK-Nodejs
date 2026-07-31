@@ -30,6 +30,12 @@ Account authorization operations under the Device API's `/v1/accounts/...` paths
 
 The API key remains only in the client closure or request header. It never appears in a public configuration dump, error detail, retry log, or MCP result. One-time plaintext returned by a create or rotate operation is delivered only to the direct SDK caller.
 
+## Sensitive Response Data
+
+`Account.provider_profile` is sensitive profile output. It can contain provider account identifiers, phone numbers, names, avatar URLs, biographies, and provider-specific properties. `SendMessageResult.reply_token` is an opaque sensitive handle intended only for passing back through `reply_to.reply_token`; callers must not inspect or construct it.
+
+An operation response that can contain `provider_profile` or `reply_token` must be handled only in controlled application code. Never log, dump, or serialize the complete response, and never place either field or the complete response in model or MCP context. Diagnostics may retain only explicitly allowlisted metadata, such as the filtered HTTP status and request ID. These outputs remain outside the MCP tool surface and do not broaden MCP exposure.
+
 ## Log and Error Redaction
 
 A public error may retain:
@@ -44,6 +50,7 @@ Never record:
 - `Authorization` or `X-Api-Key`;
 - passwords, verification codes, session payloads, or webhook signing secrets;
 - one-time plaintext returned by API key creation or rotation;
+- `provider_profile`, `reply_token`, or a complete response that can contain either field;
 - a complete request/response body or client configuration;
 - an upstream raw message, details object, complete URL query, or raw cause;
 - a raw `Response`, response headers, or another transport object that can bypass field-level redaction.

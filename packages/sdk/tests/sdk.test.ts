@@ -57,6 +57,100 @@ describe("generated operation coverage", () => {
     expect(deviceOperations.updateGroupJoinRequests.mutability).toBe("destructive");
   });
 
+  it("keeps account and message secret policies restrictive", () => {
+    // 账号资料与 reply_token 都可能包含敏感信息，MCP 隔离和重试边界必须随 schema 变化同步收紧。
+    for (const [operation, policy] of [
+      [
+        deviceOperations.listAccounts,
+        { retryable: true, secretInput: false, secretOutput: true, mcpExposure: "never" }
+      ],
+      [
+        deviceOperations.createAccount,
+        { retryable: false, secretInput: true, secretOutput: true, mcpExposure: "never" }
+      ],
+      [
+        deviceOperations.getAccount,
+        { retryable: true, secretInput: false, secretOutput: true, mcpExposure: "never" }
+      ],
+      [
+        deviceOperations.updateAccount,
+        { retryable: false, secretInput: true, secretOutput: true, mcpExposure: "never" }
+      ],
+      [
+        deviceOperations.sendMessage,
+        { retryable: false, secretInput: true, secretOutput: true, mcpExposure: "never" }
+      ]
+    ] as const) {
+      expect(operation, operation.operationId).toMatchObject(policy);
+    }
+  });
+
+  it("preserves the typed provider profile across every account response", () => {
+    const profileProperties = {
+      id: { type: "string" },
+      phone: { type: "string" },
+      username: { type: "string" },
+      display_name: { type: "string" },
+      first_name: { type: "string" },
+      last_name: { type: "string" },
+      avatar_url: { type: "string" },
+      bio: { type: "string" }
+    };
+
+    // 四个账号响应必须共享开放的标准资料模型，避免某个 operation 退回无类型 object。
+    for (const operation of [
+      deviceOperations.listAccounts,
+      deviceOperations.createAccount,
+      deviceOperations.getAccount,
+      deviceOperations.updateAccount
+    ]) {
+      expect(operation.outputSchema, operation.operationId).toMatchObject({
+        $defs: {
+          Account: {
+            properties: {
+              provider_profile: { $ref: "#/$defs/ProviderProfile" }
+            }
+          },
+          ProviderProfile: {
+            type: "object",
+            additionalProperties: true,
+            properties: profileProperties
+          }
+        }
+      });
+
+      const definitions: unknown = Reflect.get(operation.outputSchema, "$defs");
+      if (definitions === null || typeof definitions !== "object") {
+        throw new Error(`${operation.operationId} is missing output schema definitions`);
+      }
+      const providerProfile: unknown = Reflect.get(definitions, "ProviderProfile");
+      expect(providerProfile, operation.operationId).not.toHaveProperty("required");
+    }
+  });
+
+  it("keeps the synchronous reply token optional", () => {
+    expect(deviceOperations.sendMessage.outputSchema).toMatchObject({
+      $defs: {
+        SendMessageResult: {
+          properties: {
+            reply_token: { type: "string" }
+          }
+        }
+      }
+    });
+
+    const definitions: unknown = Reflect.get(deviceOperations.sendMessage.outputSchema, "$defs");
+    if (definitions === null || typeof definitions !== "object") {
+      throw new Error("sendMessage is missing output schema definitions");
+    }
+    const sendResult: unknown = Reflect.get(definitions, "SendMessageResult");
+    if (sendResult === null || typeof sendResult !== "object") {
+      throw new Error("sendMessage is missing SendMessageResult");
+    }
+    // 令牌铸造失败不能把已经成功的发送响应变成 schema 错误。
+    expect(Reflect.get(sendResult, "required")).not.toContain("reply_token");
+  });
+
   it("preserves paired message receipt fields in generated metadata", () => {
     // 字段依赖必须进入发布 metadata，避免下游工具只看到两个互不相关的可选字段。
     expect(deviceOperations.markConversationRead.inputSchema).toMatchObject({
@@ -343,6 +437,34 @@ describe("transport security and response handling", () => {
     });
     // 巨大 exponent 不能展开为无界字符串，也不能退化成 Infinity。
     await expect(extremeClient.getWorkspace()).rejects.toBeInstanceOf(UnifyPortResponseParseError);
+  });
+
+  it("returns a synchronous reply token to direct SDK callers", async () => {
+    const client = new UnifyPortDeviceClient({
+      baseUrl: "https://device.example.com",
+      apiKey: "test-key",
+      fetch: async () =>
+        jsonResponse({
+          request_id: "req_send",
+          data: {
+            message_id: "msg_test",
+            account_id: "acc_test",
+            status: "accepted",
+            reply_token: "opaque-test-reply-token"
+          }
+        })
+    });
+
+    const result = await client.sendMessage({
+      body: {
+        account_id: "acc_test",
+        to: { id: "recipient_test", type: "user" },
+        message: { type: "text", text: "Hello" }
+      }
+    });
+
+    // 直连 SDK 必须保留不透明句柄，MCP 的更窄暴露面不能反向裁剪受控调用方响应。
+    expect(result.data.data.reply_token).toBe("opaque-test-reply-token");
   });
 
   it("caps JSON after unsafe integer normalization", async () => {
