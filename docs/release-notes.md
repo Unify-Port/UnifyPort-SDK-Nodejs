@@ -2,7 +2,7 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
-## Unreleased
+## 0.4.0 - 2026-07-31
 
 ### Provider profiles and message reply handles
 
@@ -11,6 +11,8 @@
 - Responses that can contain `provider_profile` or `reply_token` are classified as sensitive output. Process them only in controlled application code; do not log the complete response or place it in model context.
 
 Compatibility: these response schema changes are additive and wire-compatible. All standard profile fields and `reply_token` are optional, existing provider-specific `provider_profile` fields remain valid, and callers must continue to handle absent values. The public surface remains 64 operations. `X-Api-Key` authentication, retry classifications, and MCP exposure are unchanged.
+
+The npm publication, Git tag, and clean-install verification for this version are tracked separately from this source release preparation.
 
 ## 0.3.0 - 2026-07-29
 

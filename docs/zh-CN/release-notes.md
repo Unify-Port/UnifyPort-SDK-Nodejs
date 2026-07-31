@@ -2,7 +2,7 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
-## 未发布
+## 0.4.0 - 2026-07-31
 
 ### Provider 账号资料与消息引用句柄
 
@@ -11,6 +11,8 @@
 - 可能包含 `provider_profile` 或 `reply_token` 的响应归类为敏感输出。仅在受控应用代码中处理；不得记录完整响应，也不得将其放入模型上下文。
 
 兼容性：这些响应 schema 变更是增量且 wire-compatible 的。所有标准资料字段与 `reply_token` 均为可选，现有 provider 特有的 `provider_profile` 字段仍然有效，调用方也必须继续处理字段缺失的情况。公开接口面仍为 64 个 operation；`X-Api-Key` 鉴权、重试分类与 MCP exposure 均未变化。
+
+该版本的 npm 发布、Git tag 与全新安装验证与本次源码发布准备分开记录。
 
 ## 0.3.0 - 2026-07-29
 
