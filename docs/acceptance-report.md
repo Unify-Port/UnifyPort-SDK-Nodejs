@@ -3,7 +3,7 @@
 [English](acceptance-report.md) | [简体中文](zh-CN/acceptance-report.md)
 
 - Acceptance baseline: July 28, 2026
-- Release status reviewed: July 29, 2026
+- Release status reviewed: July 31, 2026
 
 > This document records the pre-release acceptance baseline and the current distribution boundary. For the latest SDK version and installation instructions, see the root `README.md`.
 
@@ -11,7 +11,7 @@
 
 The SDK, MCP server, public skills, generation pipeline, and quality gates passed the complete local acceptance baseline. The project can continue to adopt new operations from the public API contract. A new operation is not retried or exposed through MCP until its policy has been explicitly reviewed.
 
-`@unifyport/sdk-node` version `0.3.0` is published to npm under the MIT license. `@unifyport/mcp-server` remains `private: true`; publishing the SDK does not expand the MCP server's distribution boundary.
+`@unifyport/sdk-node` version `0.4.0` is published to npm under the MIT license. `@unifyport/mcp-server` remains `private: true`; publishing the SDK does not expand the MCP server's distribution boundary.
 
 ## Scope
 
@@ -31,7 +31,7 @@ The SDK, MCP server, public skills, generation pipeline, and quality gates passe
 | Device API operations                  |        64 |
 | Explicit MCP allowlist                 |         4 |
 | MCP excluded by default or permanently |        60 |
-| Automated tests                        | 35 passed |
+| Automated tests                        | 39 passed |
 
 See [API coverage](api-coverage.md) for the complete operation mapping.
 
@@ -47,11 +47,12 @@ See [API coverage](api-coverage.md) for the complete operation mapping.
 - MCP input schemas recursively reject extra fields and share one schema across AJV validation and pre-execution projection.
 - MCP is read-only by default. Write and destructive operations require separate explicit permissions, and secret operations are never exposed.
 - Passwords, verification codes, and session payloads used by Device API account authorization remain sensitive SDK inputs and are not exposed through MCP.
+- `Account.provider_profile` and `SendMessageResult.reply_token` remain sensitive SDK outputs: they stay outside MCP, complete containing responses are not logged, and callers pass opaque reply handles back unchanged.
 - The cursor helper enforces a page limit, detects repeated cursors, and handles abort races with pending fetches.
 
 ## Verification Record
 
-The pre-release baseline was run with Node.js 24.18.0 and pnpm 10.34.5:
+The `0.4.0` release gate was run with Node.js 22.12.0 and pnpm 10.34.5:
 
 | Command or gate       | Result                                                                           |
 | --------------------- | -------------------------------------------------------------------------------- |
@@ -60,7 +61,7 @@ The pre-release baseline was run with Node.js 24.18.0 and pnpm 10.34.5:
 | `pnpm generate:check` | Generated artifacts were reproducible and had no drift                           |
 | `pnpm lint`           | ESLint passed                                                                    |
 | `pnpm format:check`   | Prettier passed                                                                  |
-| `pnpm test`           | 35/35 passed                                                                     |
+| `pnpm test`           | 39/39 passed                                                                     |
 | Statement coverage    | 93.67%                                                                           |
 | Branch coverage       | 85.15%                                                                           |
 | Function coverage     | 97.89%                                                                           |
@@ -70,15 +71,15 @@ The pre-release baseline was run with Node.js 24.18.0 and pnpm 10.34.5:
 | `pnpm package:check`  | `publint`, type entry points, and public-boundary scans passed for both tarballs |
 | `pnpm check`          | The complete quality gate passed                                                 |
 
-The published `0.3.0` package was also installed from the public registry in a new temporary project. It passed strict TypeScript compilation for the current provider and webhook event types, plus runtime import checks for the public client and operation catalog exports.
+The published `0.4.0` package was also installed from the public registry in a new temporary project. It passed strict TypeScript compilation for the typed `ProviderProfile`, provider-specific extension fields, and optional `SendMessageResult.reply_token`, plus a runtime import check for the public client export.
 
 The current CI matrix runs `pnpm check` on Node.js 22.12.0 and 24.x. The repository pins pnpm 10.34.5 so that the quality gates can run on the declared minimum Node.js version; both matrix entries passed after this alignment.
 
 ## External Verification Status
 
 - No automated test uses a production credential or calls the production API; injected `fetch` implementations cover protocol, security, and error boundaries.
-- `@unifyport/sdk-node@0.3.0` has been published to npm, selected by the npm `latest` dist-tag, and tagged as `v0.3.0` in Git at release commit `9c7b22b`.
-- The public registry shasum matched the pre-publication dry run, and a clean install resolved exactly `0.3.0`.
+- `@unifyport/sdk-node@0.4.0` has been published to npm, selected by the npm `latest` dist-tag, and tagged as `v0.4.0` in Git at release commit `03d9b37`.
+- The public registry shasum matched the pre-publication dry run, and a clean install resolved exactly `0.4.0`.
 - The clean installation passed TypeScript `5.9.3` compilation and runtime import checks without calling a production API or using a production credential.
 - `@unifyport/mcp-server` has not been published and remains private.
 
