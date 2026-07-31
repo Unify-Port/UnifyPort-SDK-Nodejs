@@ -974,7 +974,7 @@ export interface components {
             provider: components["schemas"]["ProviderName"];
             /** @description provider 侧账号公开标识。 */
             provider_account_ref?: string;
-            provider_profile?: components["schemas"]["FreeFormObject"];
+            provider_profile?: components["schemas"]["ProviderProfile"];
             proxy?: components["schemas"]["FreeFormObject"];
             region: string;
             runtime_status?: components["schemas"]["RuntimeStatus"];
@@ -1304,6 +1304,22 @@ export interface components {
          * @enum {string}
          */
         ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "x" | "zalo" | "tiktok";
+        /** @description 账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。 */
+        ProviderProfile: {
+            /** @description 账号头像 URL。 */
+            avatar_url?: string;
+            bio?: string;
+            display_name?: string;
+            first_name?: string;
+            /** @description provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。 */
+            id?: string;
+            last_name?: string;
+            /** @description 已归一化的账号手机号。 */
+            phone?: string;
+            username?: string;
+        } & {
+            [key: string]: unknown;
+        };
         ProviderRegionsResponse: {
             provider: components["schemas"]["ProviderName"];
             regions: components["schemas"]["RegionAvailability"][];
@@ -1319,7 +1335,7 @@ export interface components {
             supported: boolean;
         };
         ReplyTo: {
-            /** @description 来自入站事件 `data.message.reply_token` 的不透明句柄。 */
+            /** @description 来自入站事件 `data.message.reply_token` 或发送成功后 `SendMessageResult.reply_token` 的不透明句柄；调用时应原样回传。 */
             reply_token: string;
         };
         ResponseMeta: {
@@ -1352,6 +1368,8 @@ export interface components {
             account_id: string;
             message_id: string;
             provider_ref?: string;
+            /** @description WhatsApp 发送成功后可能同步返回不透明引用句柄；无法生成稳定句柄时省略。该值按敏感数据处理，不要写入日志。 */
+            reply_token?: string;
             /** @example accepted */
             status: string;
         };

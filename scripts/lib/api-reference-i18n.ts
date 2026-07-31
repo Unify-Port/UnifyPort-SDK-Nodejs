@@ -190,6 +190,12 @@ const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
   "授权模式，例如 qrcode、code、session。":
     "The authorization mode, for example `qrcode`, `code`, or `session`.",
   "provider 侧账号公开标识。": "The provider-side public account identifier.",
+  "账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。":
+    "The account's public provider profile. The listed properties are standard; other properties may vary by provider.",
+  "provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。":
+    "The provider-side account identifier. WhatsApp returns the canonical LID in `{account}@lid` format after profile synchronization; other providers return a stable account identifier when available. This field may be absent until synchronization completes.",
+  "已归一化的账号手机号。": "The normalized account phone number.",
+  "账号头像 URL。": "The account avatar URL.",
   "授权流程状态，例如 pending_auth、awaiting_qr_scan、authorized、failed。":
     "The authorization flow status, for example `pending_auth`, `awaiting_qr_scan`, `authorized`, or `failed`.",
   "可选。WhatsApp 中与 up_to_message_sender_id 一起发送目标消息的 read receipt；省略两者时标记整个会话已读。":
@@ -205,8 +211,10 @@ const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
   "传空字符串表示清空备注。": "Pass an empty string to clear the note.",
   "传空字符串表示清空描述。": "Pass an empty string to clear the description.",
   "provider 侧接收方 ID。": "The provider-side recipient ID.",
-  "来自入站事件 `data.message.reply_token` 的不透明句柄。":
-    "An opaque handle from `data.message.reply_token` in an inbound event.",
+  "来自入站事件 `data.message.reply_token` 或发送成功后 `SendMessageResult.reply_token` 的不透明句柄；调用时应原样回传。":
+    "An opaque handle from `data.message.reply_token` in an inbound event or `SendMessageResult.reply_token` after a successful send; pass it back unchanged.",
+  "WhatsApp 发送成功后可能同步返回不透明引用句柄；无法生成稳定句柄时省略。该值按敏感数据处理，不要写入日志。":
+    "WhatsApp may return an opaque reply handle after a successful send. It is omitted when no stable handle can be generated. Treat this value as sensitive data and do not log it.",
   "目标消息作者标识；缺省通常表示账号自身。":
     "The target message author's identifier. Omitting it usually refers to the account itself.",
   "空字符串表示取消回应。": "An empty string removes the reaction.",

@@ -170,12 +170,34 @@ describe("operation registry policy", () => {
     expect(destructiveNames.has(deviceOperations.deleteAccount.toolName)).toBe(false);
   });
 
-  it("never exposes secret or non-allowlisted operations even with every permission", () => {
+  it("keeps the exact allowlist and excludes account and message operations", () => {
     const registry = createToolRegistry(
       { device: deviceClient() },
       { enableWrites: true, enableDestructive: true }
     );
     const names = new Set(registry.definitions.map((tool) => tool.name));
+
+    // 精确集合能发现 metadata 被误放宽，而不只是验证当前标记为 never 的 operation。
+    expect([...names].sort()).toEqual(
+      [
+        deviceOperations.getWorkspace.toolName,
+        deviceOperations.listApiKeys.toolName,
+        deviceOperations.listProviderRegions.toolName,
+        deviceOperations.updateApiKeyStatus.toolName
+      ].sort()
+    );
+
+    // 这些响应或输入包含账号资料与 reply_token，即使打开全部权限也不能进入模型工具面。
+    for (const operation of [
+      deviceOperations.listAccounts,
+      deviceOperations.createAccount,
+      deviceOperations.getAccount,
+      deviceOperations.updateAccount,
+      deviceOperations.sendMessage
+    ]) {
+      expect(names.has(operation.toolName), operation.operationId).toBe(false);
+    }
+
     for (const operation of Object.values(deviceOperations)) {
       if (operation.mcpExposure === "never") expect(names.has(operation.toolName)).toBe(false);
     }

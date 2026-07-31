@@ -2,6 +2,16 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
+## 未发布
+
+### Provider 账号资料与消息引用句柄
+
+- `Account.provider_profile` 现在使用 `ProviderProfile`。其可选标准字段包括 `id`、`phone`、`username`、`display_name`、`first_name`、`last_name`、`avatar_url` 与 `bio`；仍允许 provider 特有字段。
+- `SendMessageResult` 新增可选的 `reply_token`。返回时，它是可通过 `reply_to.reply_token` 原样回传的不透明敏感句柄；调用方不得解析或自行构造。
+- 可能包含 `provider_profile` 或 `reply_token` 的响应归类为敏感输出。仅在受控应用代码中处理；不得记录完整响应，也不得将其放入模型上下文。
+
+兼容性：这些响应 schema 变更是增量且 wire-compatible 的。所有标准资料字段与 `reply_token` 均为可选，现有 provider 特有的 `provider_profile` 字段仍然有效，调用方也必须继续处理字段缺失的情况。公开接口面仍为 64 个 operation；`X-Api-Key` 鉴权、重试分类与 MCP exposure 均未变化。
+
 ## 0.3.0 - 2026-07-29
 
 ### 公开 provider 与 webhook 事件名称

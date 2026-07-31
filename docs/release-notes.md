@@ -2,6 +2,16 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
+## Unreleased
+
+### Provider profiles and message reply handles
+
+- `Account.provider_profile` now uses `ProviderProfile`. Its optional standard fields are `id`, `phone`, `username`, `display_name`, `first_name`, `last_name`, `avatar_url`, and `bio`; provider-specific fields remain allowed.
+- `SendMessageResult` adds the optional `reply_token`. When present, it is an opaque sensitive handle that can be passed back through `reply_to.reply_token`; callers must not inspect or construct it.
+- Responses that can contain `provider_profile` or `reply_token` are classified as sensitive output. Process them only in controlled application code; do not log the complete response or place it in model context.
+
+Compatibility: these response schema changes are additive and wire-compatible. All standard profile fields and `reply_token` are optional, existing provider-specific `provider_profile` fields remain valid, and callers must continue to handle absent values. The public surface remains 64 operations. `X-Api-Key` authentication, retry classifications, and MCP exposure are unchanged.
+
 ## 0.3.0 - 2026-07-29
 
 ### Public providers and webhook event names

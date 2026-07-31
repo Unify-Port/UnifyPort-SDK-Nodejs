@@ -30,6 +30,12 @@ Device API 中 `/v1/accounts/...` 下的账号授权操作可能接收密码、�
 
 API key 只保存在 client 闭包或请求 header 中，不出现在公开 config dump、错误详情、retry 日志或 MCP result。创建或轮换返回的一次性明文只能交给直接 SDK 调用方。
 
+## 敏感响应数据
+
+`Account.provider_profile` 属于敏感资料输出，可能包含 provider 账号标识、手机号、姓名、头像 URL、简介与 provider 特有属性。`SendMessageResult.reply_token` 是仅用于通过 `reply_to.reply_token` 原样回传的不透明敏感句柄；调用方不得解析或自行构造。
+
+可能包含 `provider_profile` 或 `reply_token` 的 operation 响应只能在受控应用代码中处理。禁止记录、dump 或序列化完整响应，也禁止把任一字段或完整响应放入模型或 MCP 上下文。诊断信息只允许保留经过显式 allowlist 的 metadata，例如筛选后的 HTTP status 与 request ID。这些输出继续位于 MCP tool surface 之外，不会扩大 MCP exposure。
+
 ## 日志与错误脱敏
 
 公开错误允许保留：
@@ -44,6 +50,7 @@ API key 只保存在 client 闭包或请求 header 中，不出现在公开 conf
 - `Authorization`、`X-Api-Key`；
 - password、verification code、session payload、webhook signing secret；
 - API key create/rotate 返回的一次性明文；
+- `provider_profile`、`reply_token`，或可能包含任一字段的完整响应；
 - 完整 request/response body 或 client config；
 - 上游原始 message、details、完整 URL query 与原始 cause；
 - 原始 `Response`、response headers 或其他可绕过字段级脱敏的传输对象。
