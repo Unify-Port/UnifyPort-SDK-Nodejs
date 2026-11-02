@@ -37,6 +37,7 @@ const DOCUMENTATION_LOCALES = [
 
 // 手写文档采用显式清单；新增公开说明时必须主动决定是否需要双语版本。
 const BILINGUAL_DOCUMENTS = [
+  ["docs/webhook-contract.md", "docs/zh-CN/webhook-contract.md"],
   ["AGENTS.md", "AGENTS.zh-CN.md"],
   ["README.md", "README.zh-CN.md"],
   ["packages/sdk/README.md", "packages/sdk/README.zh-CN.md"],

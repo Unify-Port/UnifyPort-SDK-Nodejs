@@ -42,10 +42,10 @@ workspace API Key 管理。
 
 JSON 请求体。
 
-| 字段          | 必填 | 类型     | 约束 | 说明                        |
-| ------------- | ---- | -------- | ---- | --------------------------- |
-| `body.name`   | 是   | `string` | -    | -                           |
-| `body.prefix` | 否   | `string` | -    | 生成 API Key 时使用的前缀。 |
+| 字段          | 必填 | 类型     | 约束 | 说明                                                         |
+| ------------- | ---- | -------- | ---- | ------------------------------------------------------------ |
+| `body.name`   | 是   | `string` | -    | -                                                            |
+| `body.prefix` | 否   | `string` | -    | 生成 API Key 时使用的前缀。省略时使用默认前缀；不接受 null。 |
 
 ### 返回值
 
@@ -78,7 +78,7 @@ SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底
 ```ts
 const result = await device.createApiKey({
   body: {
-    name: "默认密钥",
+    name: "Example",
     prefix: "dk_live"
   }
 });
@@ -112,11 +112,11 @@ console.log(result.status, result.requestId);
 
 ### 返回值
 
-| HTTP status | Content-Type       | Schema                  | 说明                                       |
-| ----------- | ------------------ | ----------------------- | ------------------------------------------ |
-| `200`       | `application/json` | `ResponseMeta & object` | API Key 列表。不会返回完整明文 API Key。   |
-| `401`       | `application/json` | `ErrorEnvelope`         | 缺少或无法校验 API Key。                   |
-| `500`       | `application/json` | `ErrorEnvelope`         | 服务端内部错误或 provider 链路未映射错误。 |
+| HTTP status | Content-Type       | Schema                  | 说明                                     |
+| ----------- | ------------------ | ----------------------- | ---------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | API Key 列表。不会返回完整明文 API Key。 |
+| `401`       | `application/json` | `ErrorEnvelope`         | 缺少或无法校验 API Key。                 |
+| `500`       | `application/json` | `ErrorEnvelope`         | 服务器处理请求时发生错误。               |
 
 SDK 返回 `ApiResult<T>`，包含 `data`、`status`、可选 `requestId` 与底层 `response`。
 
@@ -168,10 +168,10 @@ console.log(result.data.data);
 
 JSON 请求体。
 
-| 字段          | 必填 | 类型     | 约束 | 说明                        |
-| ------------- | ---- | -------- | ---- | --------------------------- |
-| `body.name`   | 是   | `string` | -    | -                           |
-| `body.prefix` | 否   | `string` | -    | 生成 API Key 时使用的前缀。 |
+| 字段          | 必填 | 类型     | 约束 | 说明                                                         |
+| ------------- | ---- | -------- | ---- | ------------------------------------------------------------ |
+| `body.name`   | 是   | `string` | -    | -                                                            |
+| `body.prefix` | 否   | `string` | -    | 生成 API Key 时使用的前缀。省略时使用默认前缀；不接受 null。 |
 
 ### 返回值
 

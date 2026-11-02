@@ -4,7 +4,7 @@
 
 [English](../../api-reference/README.md) | [简体中文](README.md)
 
-本 Reference 由 `contracts/device.openapi.yaml` 自动生成，当前包含 64 个 operation。
+本 Reference 由 `contracts/device.openapi.yaml` 自动生成，当前包含 78 个 operation。
 每个 operation 都提供参数、请求体、响应和 TypeScript 调用示例。
 字段说明严格来自公开契约；`-` 表示契约尚未提供额外说明，不根据实现推测。
 
@@ -50,7 +50,7 @@ workspace API Key 管理。
 
 ### Providers
 
-provider 元数据查询。
+查询可用渠道及其元数据。
 
 | operationId                                                 | Method | Path                               | 说明                     |
 | ----------------------------------------------------------- | ------ | ---------------------------------- | ------------------------ |
@@ -58,34 +58,38 @@ provider 元数据查询。
 
 ### Accounts
 
-provider 账号资源管理。
+管理渠道账号资源。
 
-| operationId                                   | Method | Path                        | 说明         |
-| --------------------------------------------- | ------ | --------------------------- | ------------ |
-| [`createAccount`](accounts.md#create-account) | POST   | `/v1/accounts`              | 创建账号     |
-| [`deleteAccount`](accounts.md#delete-account) | DELETE | `/v1/accounts/{account_id}` | 删除账号     |
-| [`getAccount`](accounts.md#get-account)       | GET    | `/v1/accounts/{account_id}` | 获取账号详情 |
-| [`listAccounts`](accounts.md#list-accounts)   | GET    | `/v1/accounts`              | 列出账号     |
-| [`updateAccount`](accounts.md#update-account) | PATCH  | `/v1/accounts/{account_id}` | 更新账号     |
+| operationId                                                | Method | Path                                    | 说明             |
+| ---------------------------------------------------------- | ------ | --------------------------------------- | ---------------- |
+| [`createAccount`](accounts.md#create-account)              | POST   | `/v1/accounts`                          | 创建账号         |
+| [`deleteAccount`](accounts.md#delete-account)              | DELETE | `/v1/accounts/{account_id}`             | 删除账号         |
+| [`getAccount`](accounts.md#get-account)                    | GET    | `/v1/accounts/{account_id}`             | 获取账号详情     |
+| [`getAccountOperation`](accounts.md#get-account-operation) | GET    | `/v1/account-operations/{operation_id}` | 查询账号计费操作 |
+| [`listAccounts`](accounts.md#list-accounts)                | GET    | `/v1/accounts`                          | 列出账号         |
+| [`updateAccount`](accounts.md#update-account)              | PATCH  | `/v1/accounts/{account_id}`             | 更新账号         |
 
 ### Account Auth
 
-provider 账号授权流程。
+完成渠道账号授权。
 
-| operationId                                                                 | Method | Path                                      | 说明               |
-| --------------------------------------------------------------------------- | ------ | ----------------------------------------- | ------------------ |
-| [`cancelAccountAuth`](account-auth.md#cancel-account-auth)                  | POST   | `/v1/accounts/{account_id}/auth/cancel`   | 取消授权流程       |
-| [`checkAccountQrAuth`](account-auth.md#check-account-qr-auth)               | POST   | `/v1/accounts/{account_id}/auth/qr/check` | 检查二维码授权结果 |
-| [`getAccountAuthState`](account-auth.md#get-account-auth-state)             | GET    | `/v1/accounts/{account_id}/auth`          | 获取账号授权状态   |
-| [`importAccountAuthSession`](account-auth.md#import-account-auth-session)   | POST   | `/v1/accounts/{account_id}/auth/session`  | 导入会话授权       |
-| [`startAccountAuth`](account-auth.md#start-account-auth)                    | POST   | `/v1/accounts/{account_id}/auth/start`    | 启动验证码类授权   |
-| [`startAccountQrAuth`](account-auth.md#start-account-qr-auth)               | POST   | `/v1/accounts/{account_id}/auth/qr/start` | 启动二维码授权     |
-| [`submitAccountAuthCode`](account-auth.md#submit-account-auth-code)         | POST   | `/v1/accounts/{account_id}/auth/code`     | 提交验证码         |
-| [`submitAccountAuthPassword`](account-auth.md#submit-account-auth-password) | POST   | `/v1/accounts/{account_id}/auth/password` | 提交二次密码       |
+| operationId                                                                       | Method | Path                                              | 说明                   |
+| --------------------------------------------------------------------------------- | ------ | ------------------------------------------------- | ---------------------- |
+| [`cancelAccountAuth`](account-auth.md#cancel-account-auth)                        | POST   | `/v1/accounts/{account_id}/auth/cancel`           | 取消授权流程           |
+| [`checkAccountQrAuth`](account-auth.md#check-account-qr-auth)                     | POST   | `/v1/accounts/{account_id}/auth/qr/check`         | 检查二维码授权结果     |
+| [`confirmAccountPasskey`](account-auth.md#confirm-account-passkey)                | POST   | `/v1/accounts/{account_id}/auth/passkey-confirm`  | 确认 Passkey 授权      |
+| [`createAccountAuthSession`](account-auth.md#create-account-auth-session)         | POST   | `/v1/accounts/{account_id}/auth-sessions`         | 创建 Provider 授权会话 |
+| [`getAccountAuthState`](account-auth.md#get-account-auth-state)                   | GET    | `/v1/accounts/{account_id}/auth`                  | 获取账号授权状态       |
+| [`importAccountAuthSession`](account-auth.md#import-account-auth-session)         | POST   | `/v1/accounts/{account_id}/auth/session`          | 导入会话授权           |
+| [`startAccountAuth`](account-auth.md#start-account-auth)                          | POST   | `/v1/accounts/{account_id}/auth/start`            | 启动验证码类授权       |
+| [`startAccountQrAuth`](account-auth.md#start-account-qr-auth)                     | POST   | `/v1/accounts/{account_id}/auth/qr/start`         | 启动二维码授权         |
+| [`submitAccountAuthCode`](account-auth.md#submit-account-auth-code)               | POST   | `/v1/accounts/{account_id}/auth/code`             | 提交验证码             |
+| [`submitAccountAuthPassword`](account-auth.md#submit-account-auth-password)       | POST   | `/v1/accounts/{account_id}/auth/password`         | 提交二次密码           |
+| [`submitAccountPasskeyResponse`](account-auth.md#submit-account-passkey-response) | POST   | `/v1/accounts/{account_id}/auth/passkey-response` | 提交 Passkey 凭证响应  |
 
 ### Account Runtime
 
-provider 账号运行态控制。
+管理渠道账号运行状态。
 
 | operationId                                                               | Method | Path                                          | 说明           |
 | ------------------------------------------------------------------------- | ------ | --------------------------------------------- | -------------- |
@@ -94,42 +98,56 @@ provider 账号运行态控制。
 | [`startAccountRuntime`](account-runtime.md#start-account-runtime)         | POST   | `/v1/accounts/{account_id}/runtime/start`     | 启动账号运行态 |
 | [`stopAccountRuntime`](account-runtime.md#stop-account-runtime)           | POST   | `/v1/accounts/{account_id}/runtime/stop`      | 停止账号运行态 |
 
+### Posts
+
+当前登录账号的帖子、一级评论查询和回复。
+
+| operationId                                       | Method | Path                                             | 说明                       |
+| ------------------------------------------------- | ------ | ------------------------------------------------ | -------------------------- |
+| [`getPost`](posts.md#get-post)                    | POST   | `/v1/accounts/{account_id}/posts/info`           | 获取帖子详情               |
+| [`listPostComments`](posts.md#list-post-comments) | POST   | `/v1/accounts/{account_id}/posts/comments/list`  | 列出帖子的一级评论         |
+| [`listPosts`](posts.md#list-posts)                | GET    | `/v1/accounts/{account_id}/posts`                | 列出本账号帖子             |
+| [`replyPostComment`](posts.md#reply-post-comment) | POST   | `/v1/accounts/{account_id}/posts/comments/reply` | 发布一级评论或回复一级评论 |
+
 ### Conversations
 
-会话列表、详情、成员、读写状态、静音、置顶与标签。
+会话列表、详情、成员、历史补拉、读写状态、静音、置顶与标签。
 
-| operationId                                                                      | Method | Path                                                    | 说明                 |
-| -------------------------------------------------------------------------------- | ------ | ------------------------------------------------------- | -------------------- |
-| [`deleteConversationLabel`](conversations.md#delete-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/delete` | 删除会话标签         |
-| [`getConversation`](conversations.md#get-conversation)                           | GET    | `/v1/accounts/{account_id}/conversations/info`          | 获取会话详情         |
-| [`listConversationLabels`](conversations.md#list-conversation-labels)            | GET    | `/v1/accounts/{account_id}/conversations/labels`        | 列出会话标签         |
-| [`listConversationMembers`](conversations.md#list-conversation-members)          | GET    | `/v1/accounts/{account_id}/conversations/members`       | 列出会话成员         |
-| [`listConversations`](conversations.md#list-conversations)                       | GET    | `/v1/accounts/{account_id}/conversations`               | 列出会话             |
-| [`markConversationRead`](conversations.md#mark-conversation-read)                | POST   | `/v1/accounts/{account_id}/conversations/read`          | 标记会话已读         |
-| [`markConversationUnread`](conversations.md#mark-conversation-unread)            | POST   | `/v1/accounts/{account_id}/conversations/unread`        | 标记会话未读         |
-| [`muteConversation`](conversations.md#mute-conversation)                         | POST   | `/v1/accounts/{account_id}/conversations/mute`          | 静音会话             |
-| [`pinConversation`](conversations.md#pin-conversation)                           | POST   | `/v1/accounts/{account_id}/conversations/pin`           | 置顶会话             |
-| [`setConversationLabelMembers`](conversations.md#set-conversation-label-members) | POST   | `/v1/accounts/{account_id}/conversations/labels`        | 给会话打标或移除标签 |
-| [`unmuteConversation`](conversations.md#unmute-conversation)                     | POST   | `/v1/accounts/{account_id}/conversations/unmute`        | 取消静音会话         |
-| [`unpinConversation`](conversations.md#unpin-conversation)                       | POST   | `/v1/accounts/{account_id}/conversations/unpin`         | 取消置顶会话         |
-| [`upsertConversationLabel`](conversations.md#upsert-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/upsert` | 新建或更新会话标签   |
+| operationId                                                                      | Method | Path                                                      | 说明                 |
+| -------------------------------------------------------------------------------- | ------ | --------------------------------------------------------- | -------------------- |
+| [`deleteConversationLabel`](conversations.md#delete-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/delete`   | 删除会话标签         |
+| [`getConversation`](conversations.md#get-conversation)                           | GET    | `/v1/accounts/{account_id}/conversations/info`            | 获取会话详情         |
+| [`listConversationLabels`](conversations.md#list-conversation-labels)            | GET    | `/v1/accounts/{account_id}/conversations/labels`          | 列出会话标签         |
+| [`listConversationMembers`](conversations.md#list-conversation-members)          | GET    | `/v1/accounts/{account_id}/conversations/members`         | 列出会话成员         |
+| [`listConversations`](conversations.md#list-conversations)                       | GET    | `/v1/accounts/{account_id}/conversations`                 | 列出会话             |
+| [`markConversationRead`](conversations.md#mark-conversation-read)                | POST   | `/v1/accounts/{account_id}/conversations/read`            | 标记会话已读         |
+| [`markConversationUnread`](conversations.md#mark-conversation-unread)            | POST   | `/v1/accounts/{account_id}/conversations/unread`          | 标记会话未读         |
+| [`muteConversation`](conversations.md#mute-conversation)                         | POST   | `/v1/accounts/{account_id}/conversations/mute`            | 静音会话             |
+| [`pinConversation`](conversations.md#pin-conversation)                           | POST   | `/v1/accounts/{account_id}/conversations/pin`             | 置顶会话             |
+| [`requestConversationHistory`](conversations.md#request-conversation-history)    | POST   | `/v1/accounts/{account_id}/conversations/history/request` | 请求补拉会话历史消息 |
+| [`setConversationLabelMembers`](conversations.md#set-conversation-label-members) | POST   | `/v1/accounts/{account_id}/conversations/labels`          | 给会话打标或移除标签 |
+| [`unmuteConversation`](conversations.md#unmute-conversation)                     | POST   | `/v1/accounts/{account_id}/conversations/unmute`          | 取消静音会话         |
+| [`unpinConversation`](conversations.md#unpin-conversation)                       | POST   | `/v1/accounts/{account_id}/conversations/unpin`           | 取消置顶会话         |
+| [`upsertConversationLabel`](conversations.md#upsert-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/upsert`   | 新建或更新会话标签   |
 
 ### Contacts
 
-provider 联系人视图与联系人动作。
+查询联系人及执行联系人操作。
 
-| operationId                                                  | Method | Path                                           | 说明                 |
-| ------------------------------------------------------------ | ------ | ---------------------------------------------- | -------------------- |
-| [`blockContact`](contacts.md#block-contact)                  | POST   | `/v1/accounts/{account_id}/contacts/block`     | 封锁联系人           |
-| [`getContact`](contacts.md#get-contact)                      | GET    | `/v1/accounts/{account_id}/contacts/info`      | 获取联系人详情       |
-| [`listContactBlocklist`](contacts.md#list-contact-blocklist) | GET    | `/v1/accounts/{account_id}/contacts/blocklist` | 查询联系人黑名单     |
-| [`listContacts`](contacts.md#list-contacts)                  | GET    | `/v1/accounts/{account_id}/contacts`           | 列出联系人           |
-| [`setContactNote`](contacts.md#set-contact-note)             | POST   | `/v1/accounts/{account_id}/contacts/note`      | 设置或清空联系人备注 |
-| [`unblockContact`](contacts.md#unblock-contact)              | POST   | `/v1/accounts/{account_id}/contacts/unblock`   | 解封联系人           |
+| operationId                                                  | Method | Path                                            | 说明                         |
+| ------------------------------------------------------------ | ------ | ----------------------------------------------- | ---------------------------- |
+| [`blockContact`](contacts.md#block-contact)                  | POST   | `/v1/accounts/{account_id}/contacts/block`      | 封锁联系人                   |
+| [`createContact`](contacts.md#create-contact)                | POST   | `/v1/accounts/{account_id}/contacts/add`        | 添加联系人                   |
+| [`getContact`](contacts.md#get-contact)                      | GET    | `/v1/accounts/{account_id}/contacts/info`       | 获取联系人详情               |
+| [`getContactMembership`](contacts.md#get-contact-membership) | GET    | `/v1/accounts/{account_id}/contacts/membership` | 查询联系人是否在联系人列表中 |
+| [`listContactBlocklist`](contacts.md#list-contact-blocklist) | GET    | `/v1/accounts/{account_id}/contacts/blocklist`  | 查询联系人黑名单             |
+| [`listContacts`](contacts.md#list-contacts)                  | GET    | `/v1/accounts/{account_id}/contacts`            | 列出联系人                   |
+| [`setContactNote`](contacts.md#set-contact-note)             | POST   | `/v1/accounts/{account_id}/contacts/note`       | 设置或清空联系人备注         |
+| [`unblockContact`](contacts.md#unblock-contact)              | POST   | `/v1/accounts/{account_id}/contacts/unblock`    | 解封联系人                   |
 
 ### Groups
 
-provider 群组视图与群组动作。
+查询群组及执行群组操作。
 
 | operationId                                                          | Method | Path                                                    | 说明                   |
 | -------------------------------------------------------------------- | ------ | ------------------------------------------------------- | ---------------------- |
@@ -156,9 +174,19 @@ provider 群组视图与群组动作。
 | [`revokeMessage`](messages.md#revoke-message) | POST   | `/v1/messages/revoke`   | 撤回消息                   |
 | [`sendMessage`](messages.md#send-message)     | POST   | `/v1/messages`          | 发送消息                   |
 
+### Calls
+
+仅内测工作区可准备、查询和结束 WhatsApp 单聊语音或视频通话；呼入暂未开放。
+
+| operationId                                 | Method | Path                         | 说明                 |
+| ------------------------------------------- | ------ | ---------------------------- | -------------------- |
+| [`createCall`](calls.md#create-call)        | POST   | `/v1/calls`                  | 准备主动通话         |
+| [`getActiveCall`](calls.md#get-active-call) | GET    | `/v1/calls/active`           | 查询账号当前活动通话 |
+| [`hangupCall`](calls.md#hangup-call)        | POST   | `/v1/calls/{call_id}/hangup` | 挂断指定通话         |
+
 ### Webhook Endpoints
 
-业务 webhook endpoint 管理。
+管理 Webhook 接收地址。
 
 | operationId                                                                     | Method | Path                                             | 说明                  |
 | ------------------------------------------------------------------------------- | ------ | ------------------------------------------------ | --------------------- |

@@ -6,18 +6,21 @@
 
 [Back to the API Reference index](README.md)
 
-Provider account authorization flows.
+Authorize channel accounts.
 
 ## Operations on this page
 
 - [`cancelAccountAuth`](#cancel-account-auth): Cancel the authorization flow
 - [`checkAccountQrAuth`](#check-account-qr-auth): Check the QR code authorization result
+- [`confirmAccountPasskey`](#confirm-account-passkey): Confirm Passkey authorization
+- [`createAccountAuthSession`](#create-account-auth-session): Create a hosted authorization session
 - [`getAccountAuthState`](#get-account-auth-state): Get account authorization status
 - [`importAccountAuthSession`](#import-account-auth-session): Import session authorization
 - [`startAccountAuth`](#start-account-auth): Start code-based authorization
 - [`startAccountQrAuth`](#start-account-qr-auth): Start QR code authorization
 - [`submitAccountAuthCode`](#submit-account-auth-code): Submit an authorization code
 - [`submitAccountAuthPassword`](#submit-account-auth-password): Submit a two-step verification password
+- [`submitAccountPasskeyResponse`](#submit-account-passkey-response): Submit a Passkey response
 
 ---
 
@@ -38,13 +41,13 @@ Cancel the authorization flow
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider action parameters. Supported fields may vary by provider; an empty object means no additional parameters are sent.
+Channel action parameters vary by operation/provider; {} supplies no extra parameters.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -52,14 +55,14 @@ Provider action parameters. Supported fields may vary by provider; an empty obje
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -92,6 +95,8 @@ console.log(result.data.data);
 
 Check the QR code authorization result
 
+Polls QR authorization. Use auth_payload.qr_code for a QR; passkey_required instead requires WebAuthn with auth_payload.public_key. Prefer standard status/auth_status/auth_payload over legacy QR fields. A blank upstream result does not erase a known state. Terminal results clear obsolete QR materials; unavailable state returns 409 provider_not_ready. After WhatsApp authorization, call /runtime/start if still stopped or disconnected.
+
 | Property        | Value                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
 | HTTP            | `POST` `/v1/accounts/{account_id}/auth/qr/check`                               |
@@ -103,13 +108,13 @@ Check the QR code authorization result
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider action parameters. Supported fields may vary by provider; an empty object means no additional parameters are sent.
+Channel action parameters vary by operation/provider; {} supplies no extra parameters.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -117,14 +122,87 @@ Provider action parameters. Supported fields may vary by provider; an empty obje
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Current QR authorization step: distinguish QR, verification code, automatic processing and Passkey through standard state.                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
+
+The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
+
+Success status `200` response fields:
+
+| Field                                      | Present | Type                 | Constraints                                                                           | Description                                                                                                                                                                                                                                      |
+| ------------------------------------------ | ------- | -------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `result.data.request_id`                   | No      | `string`             | -                                                                                     | The request ID generated by the server.                                                                                                                                                                                                          |
+| `result.data.client_request_id`            | No      | `string`             | -                                                                                     | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                                                                                           |
+| `result.data.data`                         | Yes     | `QRAuthCheckData`    | -                                                                                     | Standard QR-check result may vary by channel/step. Prefer status/auth_status/auth_payload. TikTok may report awaiting_code after scanning or pending during automatic verification. account_id/expires_at are not universally required.          |
+| `result.data.data.provider`                | No      | `ProviderName`       | enum="telegram", "whatsapp", "line", "twitter", "zalo", "tiktok", "whatsapp-protocol" | Canonical response provider name. whatsapp-protocol supports session authorization, text/image and contact detail; reply, mentions, contact-list/writes, conversations and groups are unsupported. Availability depends on the deployed service. |
+| `result.data.data.action`                  | No      | `string`             | const="check_qr_auth"                                                                 | -                                                                                                                                                                                                                                                |
+| `result.data.data.status`                  | No      | `string`             | -                                                                                     | Authorization state such as awaiting_qr_scan, awaiting_code, pending, passkey_required or authorized.                                                                                                                                            |
+| `result.data.data.auth_status`             | No      | `string`             | -                                                                                     | Standard state for this step, usually equal to status.                                                                                                                                                                                           |
+| `result.data.data.auth_payload`            | No      | `QRAuthCheckPayload` | -                                                                                     | Step payload: QR uses qr_code, verification uses type=code, Passkey uses type=passkey/public_key. Mutually exclusive step payloads do not appear together.                                                                                       |
+| `result.data.data.auth_payload.type`       | No      | `string`             | -                                                                                     | Payload type: code or passkey for the corresponding step.                                                                                                                                                                                        |
+| `result.data.data.auth_payload.qr_code`    | No      | `string`             | -                                                                                     | QR content or directly displayable QR data URL.                                                                                                                                                                                                  |
+| `result.data.data.auth_payload.public_key` | No      | `FreeFormObject`     | -                                                                                     | -                                                                                                                                                                                                                                                |
+
+> This operation may return one-time or sensitive data. Handle it only in controlled locations and never log the full response.
+
+### TypeScript example
+
+```ts
+const result = await device.checkAccountQrAuth({
+  params: {
+    path: {
+      account_id: "acc_xxx"
+    }
+  }
+});
+console.log(result.status, result.requestId);
+```
+
+---
+
+<a id="confirm-account-passkey"></a>
+
+## `confirmAccountPasskey`
+
+Confirm Passkey authorization
+
+Confirms a waiting Passkey challenge for WhatsApp qrcode accounts only. Unknown results retain passkey_confirmation_sent; retries do not confirm again unless the previous input was explicitly rejected. After authorization, explicitly start runtime if needed.
+
+| Property        | Value                                                                             |
+| --------------- | --------------------------------------------------------------------------------- |
+| HTTP            | `POST` `/v1/accounts/{account_id}/auth/passkey-confirm`                           |
+| SDK method      | `device.confirmAccountPasskey(request, execution?)`                               |
+| SDK return type | `Promise<ApiResult<OperationData<DeviceApiOperations["confirmAccountPasskey"]>>>` |
+| Authentication  | `X-Api-Key` (injected by the client)                                              |
+| Mutability      | `write`                                                                           |
+| Automatic retry | No automatic retries                                                              |
+
+### Parameters
+
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
+
+### Request body
+
+No request body.
+
+### Responses
+
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -141,7 +219,81 @@ Success status `200` response fields:
 ### TypeScript example
 
 ```ts
-const result = await device.checkAccountQrAuth({
+const result = await device.confirmAccountPasskey({
+  params: {
+    path: {
+      account_id: "acc_xxx"
+    }
+  }
+});
+console.log(result.status, result.requestId);
+```
+
+---
+
+<a id="create-account-auth-session"></a>
+
+## `createAccountAuthSession`
+
+Create a hosted authorization session
+
+Creates a short-lived authorization session with a browser authorize_url. Currently only WhatsApp qrcode accounts are supported. Conflicts with mode switching return 409 provider_not_ready; recheck the mode before retrying.
+
+| Property        | Value                                                                                |
+| --------------- | ------------------------------------------------------------------------------------ |
+| HTTP            | `POST` `/v1/accounts/{account_id}/auth-sessions`                                     |
+| SDK method      | `device.createAccountAuthSession(request, execution?)`                               |
+| SDK return type | `Promise<ApiResult<OperationData<DeviceApiOperations["createAccountAuthSession"]>>>` |
+| Authentication  | `X-Api-Key` (injected by the client)                                                 |
+| Mutability      | `write`                                                                              |
+| Automatic retry | No automatic retries                                                                 |
+
+### Parameters
+
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
+
+### Request body
+
+No request body.
+
+### Responses
+
+| HTTP status | Content-Type       | Schema                  | Description                                                   |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------- |
+| `201`       | `application/json` | `ResponseMeta & object` | Hosted authorization session created.                         |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                   |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource. |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                             |
+| `503`       | `application/json` | `ErrorEnvelope`         | The service is temporarily unavailable.                       |
+
+The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
+
+Success status `201` response fields:
+
+| Field                                   | Present | Type                  | Constraints                                                                           | Description                                                                                                                                                                                                                                      |
+| --------------------------------------- | ------- | --------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `result.data.request_id`                | No      | `string`              | -                                                                                     | The request ID generated by the server.                                                                                                                                                                                                          |
+| `result.data.client_request_id`         | No      | `string`              | -                                                                                     | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                                                                                           |
+| `result.data.data`                      | Yes     | `ProviderAuthSession` | -                                                                                     | -                                                                                                                                                                                                                                                |
+| `result.data.data.account_id`           | Yes     | `string`              | -                                                                                     | -                                                                                                                                                                                                                                                |
+| `result.data.data.provider`             | Yes     | `ProviderName`        | enum="telegram", "whatsapp", "line", "twitter", "zalo", "tiktok", "whatsapp-protocol" | Canonical response provider name. whatsapp-protocol supports session authorization, text/image and contact detail; reply, mentions, contact-list/writes, conversations and groups are unsupported. Availability depends on the deployed service. |
+| `result.data.data.auth_mode`            | Yes     | `string`              | -                                                                                     | -                                                                                                                                                                                                                                                |
+| `result.data.data.status`               | Yes     | `string`              | -                                                                                     | -                                                                                                                                                                                                                                                |
+| `result.data.data.auth_payload`         | No      | `FreeFormObject`      | -                                                                                     | Channel payload varies with authorization state.                                                                                                                                                                                                 |
+| `result.data.data.authorize_url`        | Yes     | `string (uri)`        | -                                                                                     | Short-lived hosted authorization URL with an opaque credential. Treat as sensitive; never publicly log or share with unrelated users.                                                                                                            |
+| `result.data.data.expires_at`           | Yes     | `string (date-time)`  | -                                                                                     | -                                                                                                                                                                                                                                                |
+| `result.data.data.switchable`           | Yes     | `boolean`             | -                                                                                     | Whether authorization-mode switching is allowed for this session.                                                                                                                                                                                |
+| `result.data.data.available_auth_modes` | Yes     | `Array<string>`       | -                                                                                     | Authorization modes available to this session.                                                                                                                                                                                                   |
+
+> This operation may return one-time or sensitive data. Handle it only in controlled locations and never log the full response.
+
+### TypeScript example
+
+```ts
+const result = await device.createAccountAuthSession({
   params: {
     path: {
       account_id: "acc_xxx"
@@ -170,9 +322,9 @@ Get account authorization status
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
@@ -180,31 +332,31 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The current authorization status.                                          |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
+| HTTP status | Content-Type       | Schema                  | Description                                    |
+| ----------- | ------------------ | ----------------------- | ---------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | The current authorization status.              |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.              |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                        | Present                         | Type               | Constraints | Description                                                                                               |
-| -------------------------------------------- | ------------------------------- | ------------------ | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `result.data.request_id`                     | No                              | `string`           | -           | The request ID generated by the server.                                                                   |
-| `result.data.client_request_id`              | No                              | `string`           | -           | Echoed when the client supplies a valid `X-Request-Id` request header.                                    |
-| `result.data.data`                           | Yes                             | `AccountSession`   | -           | -                                                                                                         |
-| `result.data.data.account_id`                | Yes                             | `string`           | -           | -                                                                                                         |
-| `result.data.data.status`                    | Yes                             | `string`           | -           | The authorization flow status, for example `pending_auth`, `awaiting_qr_scan`, `authorized`, or `failed`. |
-| `result.data.data.auth_fields`               | No                              | `Array<AuthField>` | -           | -                                                                                                         |
-| `result.data.data.auth_fields[].type`        | Required when parent is present | `string`           | -           | -                                                                                                         |
-| `result.data.data.auth_fields[].required`    | Required when parent is present | `boolean`          | -           | -                                                                                                         |
-| `result.data.data.auth_fields[].label`       | No                              | `string`           | -           | -                                                                                                         |
-| `result.data.data.auth_fields[].placeholder` | No                              | `string`           | -           | -                                                                                                         |
-| `result.data.data.auth_payload`              | No                              | `FreeFormObject`   | -           | -                                                                                                         |
-| `result.data.data.expires_at`                | No                              | `string`           | -           | -                                                                                                         |
-| `result.data.data.last_error`                | No                              | `string`           | -           | -                                                                                                         |
+| Field                                        | Present                         | Type                 | Constraints | Description                                                                                                                                                                                     |
+| -------------------------------------------- | ------------------------------- | -------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`                     | No                              | `string`             | -           | The request ID generated by the server.                                                                                                                                                         |
+| `result.data.client_request_id`              | No                              | `string`             | -           | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                                          |
+| `result.data.data`                           | Yes                             | `AccountSession`     | -           | -                                                                                                                                                                                               |
+| `result.data.data.account_id`                | Yes                             | `string`             | -           | -                                                                                                                                                                                               |
+| `result.data.data.status`                    | Yes                             | `string`             | -           | Authorization states include pending_auth, awaiting_qr_scan, awaiting_code, pending, passkey_required, passkey_pending, passkey_confirmation, passkey_confirmation_sent, authorized and failed. |
+| `result.data.data.auth_fields`               | No                              | `Array<AuthField>`   | -           | -                                                                                                                                                                                               |
+| `result.data.data.auth_fields[].type`        | Required when parent is present | `string`             | -           | -                                                                                                                                                                                               |
+| `result.data.data.auth_fields[].required`    | Required when parent is present | `boolean`            | -           | -                                                                                                                                                                                               |
+| `result.data.data.auth_fields[].label`       | No                              | `string`             | -           | -                                                                                                                                                                                               |
+| `result.data.data.auth_fields[].placeholder` | No                              | `string`             | -           | -                                                                                                                                                                                               |
+| `result.data.data.auth_payload`              | No                              | `FreeFormObject`     | -           | Channel step payload; Passkey may provide type=passkey/public_key or type=passkey_confirmation with confirmation hints.                                                                         |
+| `result.data.data.expires_at`                | No                              | `string (date-time)` | -           | -                                                                                                                                                                                               |
+| `result.data.data.last_error`                | No                              | `string`             | -           | -                                                                                                                                                                                               |
 
 > This operation may return one-time or sensitive data. Handle it only in controlled locations and never log the full response.
 
@@ -240,28 +392,46 @@ Import session authorization
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider authorization parameters. A common field is `session_url`.
+Channel session import. Telegram/Twitter retain session_url and supported free fields. whatsapp-protocol credentials must be in the same-named nested object. Do not submit account routing, webhook or proxy configuration here.
 
-| Field  | Required | Type             | Constraints | Description |
-| ------ | -------- | ---------------- | ----------- | ----------- |
-| `body` | No       | `FreeFormObject` | -           | -           |
+| Field                                              | Required                        | Type                                  | Constraints | Description                                                                                                                                                                                                                     |
+| -------------------------------------------------- | ------------------------------- | ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `body.session_url`                                 | No                              | `string (uri)`                        | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol`                           | No                              | `WhatsAppProtocolSessionImportParams` | -           | Protocol session credentials for the session-import endpoint only. Responses do not echo keys/secrets. Phone validates identity; protocol keys are used for startup. edge_routing is platform-managed and must not be supplied. |
+| `body.whatsapp-protocol.phone`                     | Required when parent is present | `string`                              | minLength=1 | Formatted phone input may contain spaces, hyphens, parentheses or plus; normalized to a positive digit string.                                                                                                                  |
+| `body.whatsapp-protocol.platform`                  | No                              | `integer (int32)`                     | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.app_version`               | No                              | `string`                              | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.server_address`            | No                              | `string`                              | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.fallback_server_addresses` | No                              | `Array<string>`                       | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.country`                   | No                              | `string`                              | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.device`                    | No                              | `integer (uint32)`                    | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.static_pub_key`            | Required when parent is present | `string`                              | minLength=1 | Protocol public key.                                                                                                                                                                                                            |
+| `body.whatsapp-protocol.static_pri_key`            | Required when parent is present | `string`                              | minLength=1 | Protocol private key.                                                                                                                                                                                                           |
+| `body.whatsapp-protocol.identity_pub_key`          | Required when parent is present | `string`                              | minLength=1 | Identity public key.                                                                                                                                                                                                            |
+| `body.whatsapp-protocol.identity_pri_key`          | Required when parent is present | `string`                              | minLength=1 | Identity private key.                                                                                                                                                                                                           |
+| `body.whatsapp-protocol.hash`                      | No                              | `string`                              | -           | Legacy compatibility field; ignored and not stored. Omit it.                                                                                                                                                                    |
+| `body.whatsapp-protocol.peer_kem_public`           | No                              | `string`                              | -           | Peer KEM public key.                                                                                                                                                                                                            |
+| `body.whatsapp-protocol.auth_hex_data`             | No                              | `string`                              | -           | Current authentication hex data.                                                                                                                                                                                                |
+| `body.whatsapp-protocol.authhexdata`               | No                              | `string`                              | -           | Legacy authentication hex field.                                                                                                                                                                                                |
+| `body.whatsapp-protocol.pq_handshake_mode`         | No                              | `string`                              | -           | -                                                                                                                                                                                                                               |
+| `body.whatsapp-protocol.use_xxkem_handshake`       | No                              | `boolean`                             | -           | -                                                                                                                                                                                                                               |
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -299,6 +469,8 @@ console.log(result.data.data);
 
 Start code-based authorization
 
+Starts auth_mode=code, usually with {} and the saved provider_data.phone. For WhatsApp, show data.verify_code for entry on the phone; do not call /auth/code. For Telegram, submit the user's received code through /auth/code and a required second password through /auth/password. awaiting_code is not authorization success. Query GET /auth and verify connectivity before sending messages.
+
 | Property        | Value                                                                        |
 | --------------- | ---------------------------------------------------------------------------- |
 | HTTP            | `POST` `/v1/accounts/{account_id}/auth/start`                                |
@@ -310,13 +482,13 @@ Start code-based authorization
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider action parameters. Supported fields may vary by provider; an empty object means no additional parameters are sent.
+Channel action parameters vary by operation/provider; {} supplies no extra parameters.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -324,24 +496,31 @@ Provider action parameters. Supported fields may vary by provider; an empty obje
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Code-authorization start result; distinguish phone pairing from verification-code submission.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                           | Present | Type             | Constraints | Description                                                            |
-| ------------------------------- | ------- | ---------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`        | No      | `string`         | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id` | No      | `string`         | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`              | Yes     | `FreeFormObject` | -           | -                                                                      |
+| Field                                | Present | Type                        | Constraints                                                                           | Description                                                                                                                                                                                                                                       |
+| ------------------------------------ | ------- | --------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`             | No      | `string`                    | -                                                                                     | The request ID generated by the server.                                                                                                                                                                                                           |
+| `result.data.client_request_id`      | No      | `string`                    | -                                                                                     | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                                                                                            |
+| `result.data.data`                   | Yes     | `StartCodeAuthData`         | -                                                                                     | Authorization action result varies by channel/step. WhatsApp pairing code is verify_code; Telegram may use auth_payload.type=code. account_id/auth_fields/expires_at are not universal fields; do not parse this as an authorization-state query. |
+| `result.data.data.provider`          | Yes     | `ProviderName`              | enum="telegram", "whatsapp", "line", "twitter", "zalo", "tiktok", "whatsapp-protocol" | Canonical response provider name. whatsapp-protocol supports session authorization, text/image and contact detail; reply, mentions, contact-list/writes, conversations and groups are unsupported. Availability depends on the deployed service.  |
+| `result.data.data.action`            | Yes     | `string enum("start_auth")` | enum="start_auth"                                                                     | -                                                                                                                                                                                                                                                 |
+| `result.data.data.status`            | No      | `string`                    | -                                                                                     | Current authorization state; awaiting_code waits for user action, authorized confirms completion.                                                                                                                                                 |
+| `result.data.data.auth_status`       | No      | `string`                    | -                                                                                     | Standard step state, usually equal to status.                                                                                                                                                                                                     |
+| `result.data.data.verify_code`       | No      | `string`                    | -                                                                                     | WhatsApp pairing only: directly under data, not auth_payload. Show it for entry in WhatsApp on the phone, never /auth/code. Expiry may be absent; restart pairing if the code expires.                                                            |
+| `result.data.data.auth_payload`      | No      | `Record<string, unknown>`   | -                                                                                     | Channel authorization hint. Telegram may return type=code without the user's verification code.                                                                                                                                                   |
+| `result.data.data.auth_payload.type` | No      | `string`                    | -                                                                                     | Authorization hint type; code for Telegram verification.                                                                                                                                                                                          |
 
 > This operation may return one-time or sensitive data. Handle it only in controlled locations and never log the full response.
 
@@ -366,6 +545,8 @@ console.log(result.status, result.requestId);
 
 Start QR code authorization
 
+Starts or continues QR authorization. TikTok accepts a Boolean enable_comment override, default false; invalid types return 400 invalid_request. A QR still being generated remains pending. An uncertain state may return 409 rather than refresh or interrupt authorization. After a timeout or unknown result, query existing progress instead of starting repeatedly. Existing Passkey flows continue through standard auth_payload. After WhatsApp authorization, explicitly call /runtime/start if runtime remains stopped or disconnected.
+
 | Property        | Value                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
 | HTTP            | `POST` `/v1/accounts/{account_id}/auth/qr/start`                               |
@@ -377,13 +558,13 @@ Start QR code authorization
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider action parameters. Supported fields may vary by provider; an empty object means no additional parameters are sent.
+Channel action parameters vary by operation/provider; {} supplies no extra parameters.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -391,14 +572,14 @@ Provider action parameters. Supported fields may vary by provider; an empty obje
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -433,6 +614,8 @@ console.log(result.status, result.requestId);
 
 Submit an authorization code
 
+Submit the current authorization code. TikTok remains auth_mode=qrcode; submit 2FA here after /auth/qr/check returns awaiting_code. Acceptance is not success: keep polling QR check until authorized or failed. A rejected code returns 400 provider_invalid_request with numeric_code=30016; the user may re-enter it.
+
 | Property        | Value                                                                             |
 | --------------- | --------------------------------------------------------------------------------- |
 | HTTP            | `POST` `/v1/accounts/{account_id}/auth/code`                                      |
@@ -444,13 +627,13 @@ Submit an authorization code
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider authorization parameters. A common field is `code`.
+Channel authorization parameters, commonly code.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -458,14 +641,14 @@ Provider authorization parameters. A common field is `code`.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -514,13 +697,13 @@ Submit a two-step verification password
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
-Provider authorization parameters. A common field is `password`.
+Channel authorization parameters, commonly password.
 
 | Field  | Required | Type             | Constraints | Description |
 | ------ | -------- | ---------------- | ----------- | ----------- |
@@ -528,14 +711,14 @@ Provider authorization parameters. A common field is `password`.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The provider action result. Fields vary by action and provider.            |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -561,6 +744,80 @@ const result = await device.submitAccountAuthPassword({
   }
 });
 console.log(result.data.data);
+```
+
+> Sensitive values in this example are placeholders. Read real values from a controlled runtime environment and never write them to logs.
+
+---
+
+<a id="submit-account-passkey-response"></a>
+
+## `submitAccountPasskeyResponse`
+
+Submit a Passkey response
+
+Submits the complete serialized browser WebAuthn credential response in webauthn_response. Currently WhatsApp qrcode accounts only. Unknown results retain passkey_pending and retries do not resubmit; only an explicit rejection restores an actionable step. After authorization, explicitly start runtime if it is not running.
+
+| Property        | Value                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| HTTP            | `POST` `/v1/accounts/{account_id}/auth/passkey-response`                                 |
+| SDK method      | `device.submitAccountPasskeyResponse(request, execution?)`                               |
+| SDK return type | `Promise<ApiResult<OperationData<DeviceApiOperations["submitAccountPasskeyResponse"]>>>` |
+| Authentication  | `X-Api-Key` (injected by the client)                                                     |
+| Mutability      | `write`                                                                                  |
+| Automatic retry | No automatic retries                                                                     |
+
+### Parameters
+
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
+
+### Request body
+
+JSON request body.
+
+| Field                    | Required | Type     | Constraints | Description                                                    |
+| ------------------------ | -------- | -------- | ----------- | -------------------------------------------------------------- |
+| `body.webauthn_response` | Yes      | `string` | minLength=1 | Complete serialized JSON browser WebAuthn credential response. |
+
+### Responses
+
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Channel action result; fields vary by action and provider.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
+
+The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
+
+Success status `200` response fields:
+
+| Field                           | Present | Type             | Constraints | Description                                                            |
+| ------------------------------- | ------- | ---------------- | ----------- | ---------------------------------------------------------------------- |
+| `result.data.request_id`        | No      | `string`         | -           | The request ID generated by the server.                                |
+| `result.data.client_request_id` | No      | `string`         | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
+| `result.data.data`              | Yes     | `FreeFormObject` | -           | -                                                                      |
+
+> This operation may return one-time or sensitive data. Handle it only in controlled locations and never log the full response.
+
+### TypeScript example
+
+```ts
+const result = await device.submitAccountPasskeyResponse({
+  params: {
+    path: {
+      account_id: "acc_xxx"
+    }
+  },
+  body: {
+    webauthn_response: '{"id":"credential-id","response":{"clientDataJSON":"..."}}'
+  }
+});
+console.log(result.status, result.requestId);
 ```
 
 > Sensitive values in this example are placeholders. Read real values from a controlled runtime environment and never write them to logs.

@@ -71,10 +71,17 @@ export type JsonSafe<T> = T extends number
       ? { [TKey in keyof T]: JsonSafe<T[TKey]> }
       : T;
 
+// 同一 operation 可同时返回 202 JSON 与 204 空体，不能让 JSON 分支掩盖 undefined。
+type EmptySuccess<TOperation> = TOperation extends { responses: infer TResponses }
+  ? 204 extends keyof TResponses
+    ? undefined
+    : never
+  : never;
+
 /** 204 等无 content operation 统一建模为 undefined，避免调用方被迫处理 never。 */
 export type OperationData<TOperation> = [JsonSuccess<TOperation>] extends [never]
   ? undefined
-  : JsonSafe<JsonSuccess<TOperation>>;
+  : JsonSafe<JsonSuccess<TOperation>> | EmptySuccess<TOperation>;
 
 export interface ApiResult<T> {
   readonly data: T;

@@ -37,6 +37,13 @@ export async function invokeGeneratedTool(
         { signal },
       );
     }
+    case "device_confirm_account_passkey": {
+      const client = clients.device;
+      return await client.confirmAccountPasskey(
+        input as Parameters<UnifyPortDeviceClient["confirmAccountPasskey"]>[0],
+        { signal },
+      );
+    }
     case "device_create_account": {
       const client = clients.device;
       return await client.createAccount(
@@ -44,10 +51,31 @@ export async function invokeGeneratedTool(
         { signal },
       );
     }
+    case "device_create_account_auth_session": {
+      const client = clients.device;
+      return await client.createAccountAuthSession(
+        input as Parameters<UnifyPortDeviceClient["createAccountAuthSession"]>[0],
+        { signal },
+      );
+    }
     case "device_create_api_key": {
       const client = clients.device;
       return await client.createApiKey(
         input as Parameters<UnifyPortDeviceClient["createApiKey"]>[0],
+        { signal },
+      );
+    }
+    case "device_create_call": {
+      const client = clients.device;
+      return await client.createCall(
+        input as Parameters<UnifyPortDeviceClient["createCall"]>[0],
+        { signal },
+      );
+    }
+    case "device_create_contact": {
+      const client = clients.device;
+      return await client.createContact(
+        input as Parameters<UnifyPortDeviceClient["createContact"]>[0],
         { signal },
       );
     }
@@ -114,10 +142,31 @@ export async function invokeGeneratedTool(
         { signal },
       );
     }
+    case "device_get_account_operation": {
+      const client = clients.device;
+      return await client.getAccountOperation(
+        input as Parameters<UnifyPortDeviceClient["getAccountOperation"]>[0],
+        { signal },
+      );
+    }
+    case "device_get_active_call": {
+      const client = clients.device;
+      return await client.getActiveCall(
+        input as Parameters<UnifyPortDeviceClient["getActiveCall"]>[0],
+        { signal },
+      );
+    }
     case "device_get_contact": {
       const client = clients.device;
       return await client.getContact(
         input as Parameters<UnifyPortDeviceClient["getContact"]>[0],
+        { signal },
+      );
+    }
+    case "device_get_contact_membership": {
+      const client = clients.device;
+      return await client.getContactMembership(
+        input as Parameters<UnifyPortDeviceClient["getContactMembership"]>[0],
         { signal },
       );
     }
@@ -142,6 +191,13 @@ export async function invokeGeneratedTool(
         { signal },
       );
     }
+    case "device_get_post": {
+      const client = clients.device;
+      return await client.getPost(
+        input as Parameters<UnifyPortDeviceClient["getPost"]>[0],
+        { signal },
+      );
+    }
     case "device_get_webhook_endpoint": {
       const client = clients.device;
       return await client.getWebhookEndpoint(
@@ -153,6 +209,13 @@ export async function invokeGeneratedTool(
       const client = clients.device;
       return await client.getWorkspace(
         input as Parameters<UnifyPortDeviceClient["getWorkspace"]>[0],
+        { signal },
+      );
+    }
+    case "device_hangup_call": {
+      const client = clients.device;
+      return await client.hangupCall(
+        input as Parameters<UnifyPortDeviceClient["hangupCall"]>[0],
         { signal },
       );
     }
@@ -233,6 +296,20 @@ export async function invokeGeneratedTool(
         { signal },
       );
     }
+    case "device_list_post_comments": {
+      const client = clients.device;
+      return await client.listPostComments(
+        input as Parameters<UnifyPortDeviceClient["listPostComments"]>[0],
+        { signal },
+      );
+    }
+    case "device_list_posts": {
+      const client = clients.device;
+      return await client.listPosts(
+        input as Parameters<UnifyPortDeviceClient["listPosts"]>[0],
+        { signal },
+      );
+    }
     case "device_list_provider_regions": {
       const client = clients.device;
       return await client.listProviderRegions(
@@ -300,6 +377,20 @@ export async function invokeGeneratedTool(
       const client = clients.device;
       return await client.refreshAccountRuntime(
         input as Parameters<UnifyPortDeviceClient["refreshAccountRuntime"]>[0],
+        { signal },
+      );
+    }
+    case "device_reply_post_comment": {
+      const client = clients.device;
+      return await client.replyPostComment(
+        input as Parameters<UnifyPortDeviceClient["replyPostComment"]>[0],
+        { signal },
+      );
+    }
+    case "device_request_conversation_history": {
+      const client = clients.device;
+      return await client.requestConversationHistory(
+        input as Parameters<UnifyPortDeviceClient["requestConversationHistory"]>[0],
         { signal },
       );
     }
@@ -384,6 +475,13 @@ export async function invokeGeneratedTool(
       const client = clients.device;
       return await client.submitAccountAuthPassword(
         input as Parameters<UnifyPortDeviceClient["submitAccountAuthPassword"]>[0],
+        { signal },
+      );
+    }
+    case "device_submit_account_passkey_response": {
+      const client = clients.device;
+      return await client.submitAccountPasskeyResponse(
+        input as Parameters<UnifyPortDeviceClient["submitAccountPasskeyResponse"]>[0],
         { signal },
       );
     }

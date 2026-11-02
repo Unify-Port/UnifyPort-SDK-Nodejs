@@ -118,10 +118,13 @@ const workspace = await device.getWorkspace();
 console.log(workspace.data.data);
 
 const accounts = await device.listAccounts();
-for (const account of accounts.data.data) {
+for (const account of accounts.data.data.items) {
   console.log(account.id, account.provider, account.status);
 }
 ```
+
+This reads only the first page (default 20). While `accounts.data.data.has_more` is true, pass
+`accounts.data.data.next_cursor` unchanged in `params.query.cursor`, or use `paginateCursor`.
 
 ### Path parameters
 
@@ -246,6 +249,9 @@ smaller `maxPages` value appropriate to its workload.
 
 ## Error handling
 
+`UnifyPortApiError.numericCode` is an optional validated five-digit string from `error.numeric_code`.
+Older responses may omit it. Branch on codes rather than raw message text.
+
 All public errors extend `UnifyPortError`. Record only reviewed fields such as `status`, `code`,
 `requestId`, `api`, and `operationId`. Do not serialize complete errors, requests, responses, or
 headers.
@@ -260,6 +266,7 @@ try {
     console.error({
       status: error.status,
       code: error.code,
+      numericCode: error.numericCode,
       requestId: error.requestId,
       operationId: error.operationId
     });

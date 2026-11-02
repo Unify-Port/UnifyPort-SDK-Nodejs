@@ -6,7 +6,7 @@
 
 [Back to the API Reference index](README.md)
 
-Application webhook endpoint management.
+Manage Webhook receiver endpoints.
 
 ## Operations on this page
 
@@ -25,6 +25,8 @@ Application webhook endpoint management.
 
 Create a webhook endpoint
 
+Omitting body account_id creates a workspace endpoint; a public account ID creates an independent account endpoint. Independent configuration entirely overrides workspace configuration, even if inactive or unsubscribed; deleting its last endpoint restores inheritance for subsequent initial deliveries. account_id must be a nonempty body string, not query/null/duplicate; case variants return 400 invalid_request. Missing accounts return 404 account_not_found (20020). One active independent endpoint per account is allowed; conflicts return 409 account_webhook_already_exists (40008). Multiple inactive endpoints are allowed. PATCH existing endpoints to change URL/configuration. Multiple workspace endpoints remain supported; historical multiple-active account configurations are not automatically removed. Verify response account_id; PATCH cannot change ownership.
+
 | Property        | Value                                                                             |
 | --------------- | --------------------------------------------------------------------------------- |
 | HTTP            | `POST` `/v1/webhook-endpoints`                                                    |
@@ -42,37 +44,42 @@ No path, query, header, or cookie parameters.
 
 JSON request body.
 
-| Field                    | Required | Type                       | Constraints | Description                                                                                                      |
-| ------------------------ | -------- | -------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
-| `body.url`               | Yes      | `string (uri)`             | -           | -                                                                                                                |
-| `body.status`            | Yes      | `string`                   | -           | -                                                                                                                |
-| `body.subscribed_events` | No       | `Array<StandardEventType>` | -           | An empty or omitted value subscribes to all events.                                                              |
-| `body.signing_secret`    | No       | `string`                   | -           | The secret used to sign webhook deliveries. It is submitted only in requests and is never returned in responses. |
-| `body.retry_policy`      | No       | `FreeFormObject`           | -           | -                                                                                                                |
+| Field                    | Required | Type                                  | Constraints                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------ | -------- | ------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `body.account_id`        | No       | `string`                              | minLength=1, pattern="\\S" | Optional public account ID; binds on creation, validates existing binding on update.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `body.url`               | Yes      | `string (uri)`                        | -                          | Absolute HTTP(S) URL required.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `body.status`            | Yes      | `string enum("active" \| "inactive")` | enum="active", "inactive"  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `body.subscribed_events` | No       | `Array<StandardEventType>`            | -                          | Omitted/empty/* subscriptions include all authorized events, including contact.updated. Beta workspaces additionally receive call.incoming/answered/ended without explicit entries. Nonbeta wildcard subscriptions exclude calls; explicit call subscriptions return 403 beta_feature_not_enabled (41002). Explicit lists receive listed types only. Eligibility is rechecked for delivery/retry/replay; failures do not grant access. Incoming calls remain unavailable; message.* call records are independent. |
+| `body.signing_secret`    | No       | `string`                              | -                          | The secret used to sign webhook deliveries. It is submitted only in requests and is never returned in responses.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `body.retry_policy`      | No       | `FreeFormObject`                      | -                          | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                    |
-| ----------- | ------------------ | ----------------------- | ---------------------------------------------- |
-| `201`       | `application/json` | `ResponseMeta & object` | Created successfully.                          |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.    |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                             |
+| ----------- | ------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `201`       | `application/json` | `ResponseMeta & object` | Created successfully.                                                                                                   |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                             |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                          |
+| `403`       | `application/json` | `ErrorEnvelope`         | Workspace lacks beta access for call operations or explicit call.incoming/answered/ended subscriptions.                 |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                   |
+| `409`       | `application/json` | `ErrorEnvelope`         | Another active account endpoint exists. Update the existing active endpoint or deactivate it before activating another. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `201` response fields:
 
-| Field                                | Present | Type                       | Constraints | Description                                                            |
-| ------------------------------------ | ------- | -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`             | No      | `string`                   | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`      | No      | `string`                   | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                   | Yes     | `WebhookEndpoint`          | -           | -                                                                      |
-| `result.data.data.id`                | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.url`               | Yes     | `string (uri)`             | -           | -                                                                      |
-| `result.data.data.status`            | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>` | -           | -                                                                      |
-| `result.data.data.signing_enabled`   | Yes     | `boolean`                  | -           | -                                                                      |
-| `result.data.data.retry_policy`      | No      | `FreeFormObject`           | -           | -                                                                      |
+| Field                                | Present | Type                                  | Constraints               | Description                                                                            |
+| ------------------------------------ | ------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| `result.data.request_id`             | No      | `string`                              | -                         | The request ID generated by the server.                                                |
+| `result.data.client_request_id`      | No      | `string`                              | -                         | Echoed when the client supplies a valid `X-Request-Id` request header.                 |
+| `result.data.data`                   | Yes     | `WebhookEndpoint`                     | -                         | -                                                                                      |
+| `result.data.data.id`                | Yes     | `string`                              | -                         | -                                                                                      |
+| `result.data.data.account_id`        | No      | `string`                              | minLength=1               | Independent endpoint's public account ID; omitted for workspace endpoints, never null. |
+| `result.data.data.url`               | Yes     | `string (uri)`                        | -                         | Absolute HTTP(S) URL required.                                                         |
+| `result.data.data.status`            | Yes     | `string enum("active" \| "inactive")` | enum="active", "inactive" | -                                                                                      |
+| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>`            | -                         | -                                                                                      |
+| `result.data.data.signing_enabled`   | Yes     | `boolean`                             | -                         | -                                                                                      |
+| `result.data.data.retry_policy`      | No      | `FreeFormObject`                      | -                         | -                                                                                      |
 
 ### TypeScript example
 
@@ -96,6 +103,8 @@ console.log(result.data.data);
 
 Disable a webhook endpoint
 
+Deactivate an endpoint. Optional query account_id validates ownership; mismatch returns 400 invalid_request and missing accounts return 404 account_not_found (20020). Deactivating all independent endpoints pauses callbacks without restoring inheritance. Missing endpoints return HTTP 500 deactivate_webhook_endpoint_failed / 40006.
+
 | Property        | Value                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------- |
 | HTTP            | `POST` `/v1/webhook-endpoints/{endpoint_id}/deactivate`                               |
@@ -107,9 +116,10 @@ Disable a webhook endpoint
 
 ### Parameters
 
-| SDK field                 | Location | Required | Type     | Example    | Constraints | Description                                             |
-| ------------------------- | -------- | -------- | -------- | ---------- | ----------- | ------------------------------------------------------- |
-| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"` | -           | The webhook endpoint `public_id`, for example `we_xxx`. |
+| SDK field                 | Location | Required | Type     | Example     | Constraints                | Description                                                                                                                                                                                                              |
+| ------------------------- | -------- | -------- | -------- | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"`  | -                          | The webhook endpoint `public_id`, for example `we_xxx`.                                                                                                                                                                  |
+| `params.query.account_id` | query    | No       | `string` | `"acc_xxx"` | minLength=1, pattern="\\S" | Optional public account ID. Empty/blank/duplicate values and case variants of account_id return 400 invalid_request. Lists filter independent account endpoints; get/deactivate/delete only validate existing ownership. |
 
 ### Request body
 
@@ -122,22 +132,24 @@ No request body.
 | `200`       | `application/json` | `ResponseMeta & object` | The disabled webhook endpoint.                 |
 | `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.    |
 | `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.          |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                | Present | Type                       | Constraints | Description                                                            |
-| ------------------------------------ | ------- | -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`             | No      | `string`                   | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`      | No      | `string`                   | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                   | Yes     | `WebhookEndpoint`          | -           | -                                                                      |
-| `result.data.data.id`                | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.url`               | Yes     | `string (uri)`             | -           | -                                                                      |
-| `result.data.data.status`            | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>` | -           | -                                                                      |
-| `result.data.data.signing_enabled`   | Yes     | `boolean`                  | -           | -                                                                      |
-| `result.data.data.retry_policy`      | No      | `FreeFormObject`           | -           | -                                                                      |
+| Field                                | Present | Type                                  | Constraints               | Description                                                                            |
+| ------------------------------------ | ------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| `result.data.request_id`             | No      | `string`                              | -                         | The request ID generated by the server.                                                |
+| `result.data.client_request_id`      | No      | `string`                              | -                         | Echoed when the client supplies a valid `X-Request-Id` request header.                 |
+| `result.data.data`                   | Yes     | `WebhookEndpoint`                     | -                         | -                                                                                      |
+| `result.data.data.id`                | Yes     | `string`                              | -                         | -                                                                                      |
+| `result.data.data.account_id`        | No      | `string`                              | minLength=1               | Independent endpoint's public account ID; omitted for workspace endpoints, never null. |
+| `result.data.data.url`               | Yes     | `string (uri)`                        | -                         | Absolute HTTP(S) URL required.                                                         |
+| `result.data.data.status`            | Yes     | `string enum("active" \| "inactive")` | enum="active", "inactive" | -                                                                                      |
+| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>`            | -                         | -                                                                                      |
+| `result.data.data.signing_enabled`   | Yes     | `boolean`                             | -                         | -                                                                                      |
+| `result.data.data.retry_policy`      | No      | `FreeFormObject`                      | -                         | -                                                                                      |
 
 ### TypeScript example
 
@@ -160,6 +172,8 @@ console.log(result.data.data);
 
 Delete a webhook endpoint
 
+Idempotently delete a workspace endpoint by endpoint_id. Optional query account_id validates ownership; mismatch returns 400 without deletion. Missing accounts return 404 account_not_found (20020). Missing endpoints return 204. Deleting the last independent endpoint restores workspace inheritance for subsequent initial deliveries. Pending deliveries to the old endpoint stop rather than reroute; already issued HTTP requests cannot be recalled.
+
 | Property        | Value                                                                             |
 | --------------- | --------------------------------------------------------------------------------- |
 | HTTP            | `DELETE` `/v1/webhook-endpoints/{endpoint_id}`                                    |
@@ -171,9 +185,10 @@ Delete a webhook endpoint
 
 ### Parameters
 
-| SDK field                 | Location | Required | Type     | Example    | Constraints | Description                                             |
-| ------------------------- | -------- | -------- | -------- | ---------- | ----------- | ------------------------------------------------------- |
-| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"` | -           | The webhook endpoint `public_id`, for example `we_xxx`. |
+| SDK field                 | Location | Required | Type     | Example     | Constraints                | Description                                                                                                                                                                                                              |
+| ------------------------- | -------- | -------- | -------- | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"`  | -                          | The webhook endpoint `public_id`, for example `we_xxx`.                                                                                                                                                                  |
+| `params.query.account_id` | query    | No       | `string` | `"acc_xxx"` | minLength=1, pattern="\\S" | Optional public account ID. Empty/blank/duplicate values and case variants of account_id return 400 invalid_request. Lists filter independent account endpoints; get/deactivate/delete only validate existing ownership. |
 
 ### Request body
 
@@ -186,6 +201,7 @@ No request body.
 | `204`       | None               | -               | Deleted successfully. The response has no body. |
 | `400`       | `application/json` | `ErrorEnvelope` | The request body or parameters are invalid.     |
 | `401`       | `application/json` | `ErrorEnvelope` | The API key is missing or cannot be validated.  |
+| `404`       | `application/json` | `ErrorEnvelope` | The resource or route does not exist.           |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -212,6 +228,8 @@ console.log(result.status, result.requestId);
 
 Get a webhook endpoint
 
+Get a workspace/account endpoint by endpoint_id. Optional query account_id validates existing ownership only; mismatch returns 400 invalid_request. Missing accounts return 404 account_not_found (20020). Missing endpoints retain HTTP 500 get_webhook_endpoint_failed / 40006.
+
 | Property        | Value                                                                          |
 | --------------- | ------------------------------------------------------------------------------ |
 | HTTP            | `GET` `/v1/webhook-endpoints/{endpoint_id}`                                    |
@@ -223,9 +241,10 @@ Get a webhook endpoint
 
 ### Parameters
 
-| SDK field                 | Location | Required | Type     | Example    | Constraints | Description                                             |
-| ------------------------- | -------- | -------- | -------- | ---------- | ----------- | ------------------------------------------------------- |
-| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"` | -           | The webhook endpoint `public_id`, for example `we_xxx`. |
+| SDK field                 | Location | Required | Type     | Example     | Constraints                | Description                                                                                                                                                                                                              |
+| ------------------------- | -------- | -------- | -------- | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.path.endpoint_id` | path     | Yes      | `string` | `"we_xxx"`  | -                          | The webhook endpoint `public_id`, for example `we_xxx`.                                                                                                                                                                  |
+| `params.query.account_id` | query    | No       | `string` | `"acc_xxx"` | minLength=1, pattern="\\S" | Optional public account ID. Empty/blank/duplicate values and case variants of account_id return 400 invalid_request. Lists filter independent account endpoints; get/deactivate/delete only validate existing ownership. |
 
 ### Request body
 
@@ -233,27 +252,30 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | Webhook endpoint details.                                                  |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
+| HTTP status | Content-Type       | Schema                  | Description                                    |
+| ----------- | ------------------ | ----------------------- | ---------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Webhook endpoint details.                      |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.    |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.          |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.              |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                | Present | Type                       | Constraints | Description                                                            |
-| ------------------------------------ | ------- | -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`             | No      | `string`                   | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`      | No      | `string`                   | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                   | Yes     | `WebhookEndpoint`          | -           | -                                                                      |
-| `result.data.data.id`                | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.url`               | Yes     | `string (uri)`             | -           | -                                                                      |
-| `result.data.data.status`            | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>` | -           | -                                                                      |
-| `result.data.data.signing_enabled`   | Yes     | `boolean`                  | -           | -                                                                      |
-| `result.data.data.retry_policy`      | No      | `FreeFormObject`           | -           | -                                                                      |
+| Field                                | Present | Type                                  | Constraints               | Description                                                                            |
+| ------------------------------------ | ------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| `result.data.request_id`             | No      | `string`                              | -                         | The request ID generated by the server.                                                |
+| `result.data.client_request_id`      | No      | `string`                              | -                         | Echoed when the client supplies a valid `X-Request-Id` request header.                 |
+| `result.data.data`                   | Yes     | `WebhookEndpoint`                     | -                         | -                                                                                      |
+| `result.data.data.id`                | Yes     | `string`                              | -                         | -                                                                                      |
+| `result.data.data.account_id`        | No      | `string`                              | minLength=1               | Independent endpoint's public account ID; omitted for workspace endpoints, never null. |
+| `result.data.data.url`               | Yes     | `string (uri)`                        | -                         | Absolute HTTP(S) URL required.                                                         |
+| `result.data.data.status`            | Yes     | `string enum("active" \| "inactive")` | enum="active", "inactive" | -                                                                                      |
+| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>`            | -                         | -                                                                                      |
+| `result.data.data.signing_enabled`   | Yes     | `boolean`                             | -                         | -                                                                                      |
+| `result.data.data.retry_policy`      | No      | `FreeFormObject`                      | -                         | -                                                                                      |
 
 ### TypeScript example
 
@@ -276,6 +298,8 @@ console.log(result.data.data);
 
 List webhook endpoints
 
+Without account_id, lists workspace endpoints only; with it, lists that account's independent configuration only. No configuration returns data=[], without inherited endpoints. Missing/out-of-workspace accounts return 404 account_not_found (20020).
+
 | Property        | Value                                                                            |
 | --------------- | -------------------------------------------------------------------------------- |
 | HTTP            | `GET` `/v1/webhook-endpoints`                                                    |
@@ -287,7 +311,9 @@ List webhook endpoints
 
 ### Parameters
 
-No path, query, header, or cookie parameters.
+| SDK field                 | Location | Required | Type     | Example     | Constraints                | Description                                                                                                                                                                                                              |
+| ------------------------- | -------- | -------- | -------- | ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.query.account_id` | query    | No       | `string` | `"acc_xxx"` | minLength=1, pattern="\\S" | Optional public account ID. Empty/blank/duplicate values and case variants of account_id return 400 invalid_request. Lists filter independent account endpoints; get/deactivate/delete only validate existing ownership. |
 
 ### Request body
 
@@ -295,27 +321,30 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | A list of webhook endpoints.                                               |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
+| HTTP status | Content-Type       | Schema                  | Description                                    |
+| ----------- | ------------------ | ----------------------- | ---------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | A list of webhook endpoints.                   |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.    |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.          |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.              |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                  | Present | Type                       | Constraints | Description                                                            |
-| -------------------------------------- | ------- | -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`               | No      | `string`                   | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`        | No      | `string`                   | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                     | Yes     | `Array<WebhookEndpoint>`   | -           | -                                                                      |
-| `result.data.data[].id`                | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data[].url`               | Yes     | `string (uri)`             | -           | -                                                                      |
-| `result.data.data[].status`            | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data[].subscribed_events` | No      | `Array<StandardEventType>` | -           | -                                                                      |
-| `result.data.data[].signing_enabled`   | Yes     | `boolean`                  | -           | -                                                                      |
-| `result.data.data[].retry_policy`      | No      | `FreeFormObject`           | -           | -                                                                      |
+| Field                                  | Present | Type                                  | Constraints               | Description                                                                            |
+| -------------------------------------- | ------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| `result.data.request_id`               | No      | `string`                              | -                         | The request ID generated by the server.                                                |
+| `result.data.client_request_id`        | No      | `string`                              | -                         | Echoed when the client supplies a valid `X-Request-Id` request header.                 |
+| `result.data.data`                     | Yes     | `Array<WebhookEndpoint>`              | -                         | -                                                                                      |
+| `result.data.data[].id`                | Yes     | `string`                              | -                         | -                                                                                      |
+| `result.data.data[].account_id`        | No      | `string`                              | minLength=1               | Independent endpoint's public account ID; omitted for workspace endpoints, never null. |
+| `result.data.data[].url`               | Yes     | `string (uri)`                        | -                         | Absolute HTTP(S) URL required.                                                         |
+| `result.data.data[].status`            | Yes     | `string enum("active" \| "inactive")` | enum="active", "inactive" | -                                                                                      |
+| `result.data.data[].subscribed_events` | No      | `Array<StandardEventType>`            | -                         | -                                                                                      |
+| `result.data.data[].signing_enabled`   | Yes     | `boolean`                             | -                         | -                                                                                      |
+| `result.data.data[].retry_policy`      | No      | `FreeFormObject`                      | -                         | -                                                                                      |
 
 ### TypeScript example
 
@@ -331,6 +360,8 @@ console.log(result.data.data);
 ## `updateWebhookEndpoint`
 
 Update a webhook endpoint
+
+Submit url/status and the complete desired configuration. Omitting body account_id retains ownership; supplying it validates the existing binding only. Ownership cannot change or be cleared. Query/null/duplicate/case-variant account_id and mismatches are invalid_request; missing accounts return 404 account_not_found (20020). Reactivation preserves ownership and conflicts with another active endpoint return 409 account_webhook_already_exists (40008). Updating an already active endpoint remains allowed, including historical configurations. Omitting signing_secret disables signing; omitting retry_policy restores defaults; subscriptions replace the entire array. Missing endpoints return HTTP 500 update_webhook_endpoint_failed / 40006.
 
 | Property        | Value                                                                             |
 | --------------- | --------------------------------------------------------------------------------- |
@@ -351,37 +382,42 @@ Update a webhook endpoint
 
 JSON request body.
 
-| Field                    | Required | Type                       | Constraints | Description                                                                                                      |
-| ------------------------ | -------- | -------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
-| `body.url`               | Yes      | `string (uri)`             | -           | -                                                                                                                |
-| `body.status`            | Yes      | `string`                   | -           | -                                                                                                                |
-| `body.subscribed_events` | No       | `Array<StandardEventType>` | -           | An empty or omitted value subscribes to all events.                                                              |
-| `body.signing_secret`    | No       | `string`                   | -           | The secret used to sign webhook deliveries. It is submitted only in requests and is never returned in responses. |
-| `body.retry_policy`      | No       | `FreeFormObject`           | -           | -                                                                                                                |
+| Field                    | Required | Type                                  | Constraints                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------ | -------- | ------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `body.account_id`        | No       | `string`                              | minLength=1, pattern="\\S" | Optional public account ID; binds on creation, validates existing binding on update.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `body.url`               | Yes      | `string (uri)`                        | -                          | Absolute HTTP(S) URL required.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `body.status`            | Yes      | `string enum("active" \| "inactive")` | enum="active", "inactive"  | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `body.subscribed_events` | No       | `Array<StandardEventType>`            | -                          | Omitted/empty/* subscriptions include all authorized events, including contact.updated. Beta workspaces additionally receive call.incoming/answered/ended without explicit entries. Nonbeta wildcard subscriptions exclude calls; explicit call subscriptions return 403 beta_feature_not_enabled (41002). Explicit lists receive listed types only. Eligibility is rechecked for delivery/retry/replay; failures do not grant access. Incoming calls remain unavailable; message.* call records are independent. |
+| `body.signing_secret`    | No       | `string`                              | -                          | The secret used to sign webhook deliveries. It is submitted only in requests and is never returned in responses.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `body.retry_policy`      | No       | `FreeFormObject`                      | -                          | -                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                    |
-| ----------- | ------------------ | ----------------------- | ---------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The updated webhook endpoint.                  |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.    |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated. |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                             |
+| ----------- | ------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | The updated webhook endpoint.                                                                                           |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                             |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                          |
+| `403`       | `application/json` | `ErrorEnvelope`         | Workspace lacks beta access for call operations or explicit call.incoming/answered/ended subscriptions.                 |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                   |
+| `409`       | `application/json` | `ErrorEnvelope`         | Another active account endpoint exists. Update the existing active endpoint or deactivate it before activating another. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                | Present | Type                       | Constraints | Description                                                            |
-| ------------------------------------ | ------- | -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`             | No      | `string`                   | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`      | No      | `string`                   | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                   | Yes     | `WebhookEndpoint`          | -           | -                                                                      |
-| `result.data.data.id`                | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.url`               | Yes     | `string (uri)`             | -           | -                                                                      |
-| `result.data.data.status`            | Yes     | `string`                   | -           | -                                                                      |
-| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>` | -           | -                                                                      |
-| `result.data.data.signing_enabled`   | Yes     | `boolean`                  | -           | -                                                                      |
-| `result.data.data.retry_policy`      | No      | `FreeFormObject`           | -           | -                                                                      |
+| Field                                | Present | Type                                  | Constraints               | Description                                                                            |
+| ------------------------------------ | ------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| `result.data.request_id`             | No      | `string`                              | -                         | The request ID generated by the server.                                                |
+| `result.data.client_request_id`      | No      | `string`                              | -                         | Echoed when the client supplies a valid `X-Request-Id` request header.                 |
+| `result.data.data`                   | Yes     | `WebhookEndpoint`                     | -                         | -                                                                                      |
+| `result.data.data.id`                | Yes     | `string`                              | -                         | -                                                                                      |
+| `result.data.data.account_id`        | No      | `string`                              | minLength=1               | Independent endpoint's public account ID; omitted for workspace endpoints, never null. |
+| `result.data.data.url`               | Yes     | `string (uri)`                        | -                         | Absolute HTTP(S) URL required.                                                         |
+| `result.data.data.status`            | Yes     | `string enum("active" \| "inactive")` | enum="active", "inactive" | -                                                                                      |
+| `result.data.data.subscribed_events` | No      | `Array<StandardEventType>`            | -                         | -                                                                                      |
+| `result.data.data.signing_enabled`   | Yes     | `boolean`                             | -                         | -                                                                                      |
+| `result.data.data.retry_policy`      | No      | `FreeFormObject`                      | -                         | -                                                                                      |
 
 ### TypeScript example
 

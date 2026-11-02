@@ -3,6 +3,26 @@
  * 生成边界用于保证契约、SDK 与 MCP 同步；请修改来源契约或生成器，不要手工编辑。
  */
 export interface paths {
+    "/v1/account-operations/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询账号计费操作
+         * @description 只返回当前 API Key 工作区的安全业务结果。REVIEW 表示结果尚未确认，不代表已经退款。 创建成功后应复用原账号并查询本操作；没有提供幂等键的后续请求会视为新的建号。
+         */
+        get: operations["getAccountOperation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts": {
         parameters: {
             query?: never;
@@ -10,10 +30,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 列出账号 */
+        /**
+         * 列出账号
+         * @description 按稳定顺序分页返回当前 workspace 未删除的账号，账号数组位于 `data.items`。额度删除完成或余额删除受理后，该账号立即不再出现在列表及后续分页中。省略分页参数时只返回第一页，默认最多 20 个账号。 `data.has_more=true` 时，将 `data.next_cursor` 原样作为下一次请求的 `cursor`；续页可调整 `limit`。末页 `data.has_more=false` 且省略 `data.next_cursor`，空结果返回 `data.items: []`。 游标仅适用于签发时的 workspace，调用方不得解析或构造游标。分页期间新创建的账号需重新读取首页查看；跨页查询不提供时间点快照。 `limit` 非法、`cursor` 非法或跨 workspace 使用，以及重复传入 `limit` 或 `cursor`，均返回 `400 invalid_request`（`numeric_code=10000`）。
+         */
         get: operations["listAccounts"];
         put?: never;
-        /** 创建账号 */
+        /**
+         * 创建账号
+         * @description `region` 表示默认网络出口地区；指定自定义 `proxy` 时沿用原代理规则。已有账号不会因默认分配策略调整而迁移。 额度和余额模式没有合格默认容量时可能返回 409 `egress_region_unavailable`（20031）；配置暂不可确认返回 409 `egress_configuration_pending`（20032）；默认分配暂时关闭返回 503 `network_maintenance`（20035）。 额度模式创建不提供请求去重或历史结果重放；响应结果不明时请先核对账号列表，避免重复创建。 额度模式兼容原请求；余额模式直接创建，在同一事务内按当前梯度核价并扣款，不需要报价接口。 余额模式优先使用所选地区的直连容量；没有直连候选且未指定自定义 `proxy` 时，Telegram、WhatsApp 和 WhatsApp Protocol TCP 可使用已启用的平台代理补充。未开放的渠道仍沿用原分配规则。 代理分配与核价扣款原子提交；分配竞争或配置不可用不会自动改选其他候选。删除或退款完成不保证该地区立即有新容量。 同一工作区同步建号执行中，第二笔请求立即返回 409 wallet_account_creation_in_progress（20030）；请等待前一笔完成。 Idempotency-Key 可选。同工作区同键同参数返回原账号和周期，不重复扣款；同键异请求返回冲突。 未传幂等键时，前一笔完成后的再次请求视为新建号；调用方负责避免重复提交。 有键重试返回首次创建的安全身份与周期快照，即使账号随后删除也不会再次建号或扣款；当前状态请查询原操作。 新建事务提交后计时 720 小时，必要配置异步执行；返回账号不代表已完成渠道授权。 未扫码、重新授权、掉线和重连均不重新扣款或重置周期。本版不执行自动续费或到期停服。 余额不足返回 409 wallet_insufficient_funds（20023）；同键异请求返回 409 wallet_idempotency_conflict（20024）。 新消费关闭返回 409 wallet_workspace_disabled（20022）；资金或配置不可用返回 503 wallet_unavailable（20028）。
+         */
         post: operations["createAccount"];
         delete?: never;
         options?: never;
@@ -32,11 +58,17 @@ export interface paths {
         get: operations["getAccount"];
         put?: never;
         post?: never;
-        /** 删除账号 */
+        /**
+         * 删除账号
+         * @description WhatsApp 账号删除前会实时确认设备状态。未连接或已停止时完成平台侧清理， 不保证 WhatsApp 侧的登录会话已注销；在线时先退登再清理。 删除过程中确认设备已不存在时按已删除处理。 额度账号删除完成后、余额账号删除受理后，账号立即从当前账号列表中消失。余额账号先在事务内受理并禁用；返回202与同一个DELETE操作，完成后重复删除返回204。 结算按受理锁下本平台已落库的授权成功记录冻结：无记录且不足24小时全退，其他按剩余完整天计算。 已扫码但回调未落库同样视为无记录；迟到回调不改结算、不二退、不恢复账号。未知HTTP或清理失败不会伪报成功。
+         */
         delete: operations["deleteAccount"];
         options?: never;
         head?: never;
-        /** 更新账号 */
+        /**
+         * 更新账号
+         * @description 实际改变 `auth_mode` 时，请求体必须仅包含该字段，目标模式必须为该渠道支持的方式。 同一账号须串行切换：先暂停授权（含二维码轮询）、运行、配置及删除操作并等待在途请求处理结束，切换完成后再继续；切换不能撤回已发给渠道的请求。 实际变更 `provider` 时也须暂停同账号其他业务操作并等待在途请求处理结束；变更请求处理结束且结果确认后再恢复。失败或超时导致处理状态或结果不确定时保持暂停，先确认后继续。原样回传当前 `provider` 不增加该串行要求。 切换至 `code` 前须先保存手机号；缺少手机号返回 400 `auth_mode_phone_required`。 Telegram、WhatsApp 实际切换会清除旧会话，包括已授权会话；完成后旧授权会话记录统一为 `cancelled`，临时材料清空，调用方应重新授权。 成功后保存目标模式，授权状态为 `pending_auth`，运行状态为 `stopped`；不自动启动授权或连接。 提交与当前相同的模式保留当前授权进度和临时材料，不重启授权；其他字段仍按普通部分更新处理。 清理失败时不提交目标模式，但远端会话可能已经清除；可重试仅包含同一目标 `auth_mode` 的 PATCH。 清理失败或切换结果未确认（包括超时）时仍须暂停上述操作，直到同一目标模式切换完成；提交当前模式的无操作成功不表示未决切换已完成。 请求明确在参数校验阶段被拒绝且没有此前未完成的切换时，可修正参数或补齐配置后重新发起。 切换冲突返回 409 `provider_not_ready`。成功响应继续使用原账号结构，授权状态通过既有授权查询读取。 TikTok 账号更新无法安全完成或被中断时返回 502 provider_unavailable。 收到该错误后先重新查询账号状态，再决定是否重新提交更新。
+         */
         patch: operations["updateAccount"];
         trace?: never;
     };
@@ -51,6 +83,26 @@ export interface paths {
         get: operations["getAccountAuthState"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/auth-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 创建 Provider 授权会话
+         * @description 为当前账号创建短期有效的 Provider 授权会话，并返回可在浏览器中打开的 `authorize_url`。当前仅支持使用 `qrcode` 授权模式的 WhatsApp 账号。 创建与授权模式切换冲突时返回 `409 provider_not_ready`，重新查询当前模式后再重试。
+         */
+        post: operations["createAccountAuthSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -83,8 +135,51 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 提交验证码 */
+        /**
+         * 提交验证码
+         * @description 提交当前授权步骤要求的验证码。TikTok 账号仍使用 `auth_mode=qrcode`；扫码后 `/auth/qr/check` 返回 `awaiting_code` 时，通过本接口提交 2FA 验证码。提交成功 只表示已接受，调用方必须继续轮询 `/auth/qr/check`，直到返回 `authorized` 或 `failed`。 Provider 明确拒绝验证码时保持 HTTP 400 `provider_invalid_request`，并使用 `numeric_code=30016` 区分一般参数拒绝；客户端可允许用户重新输入验证码。
+         */
         post: operations["submitAccountAuthCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/auth/passkey-confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 确认 Passkey 授权
+         * @description 确认当前账号授权流程中等待用户确认的 Passkey 挑战。当前仅支持使用 `qrcode` 授权模式的 WhatsApp 账号。
+         */
+        post: operations["confirmAccountPasskey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/auth/passkey-response": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 提交 Passkey 凭证响应
+         * @description 向当前账号的授权流程提交浏览器生成的 WebAuthn 凭证响应。 `webauthn_response` 必须是完整凭证响应序列化后的 JSON 字符串。当前仅支持 使用 `qrcode` 授权模式的 WhatsApp 账号。只有 Provider 明确拒绝输入时才恢复上一可操作步骤。
+         */
+        post: operations["submitAccountPasskeyResponse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -117,7 +212,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 检查二维码授权结果 */
+        /**
+         * 检查二维码授权结果
+         * @description 轮询二维码授权状态。普通二维码步骤通过 `auth_payload.qr_code` 返回二维码； WhatsApp 授权也可能进入 `passkey_required`，此时调用方应使用 `auth_payload.public_key` 发起 WebAuthn 操作，而不能继续把响应当作二维码。 渠道历史兼容字段可能随普通二维码结果一并返回，调用方应以 `status`、`auth_status` 和 `auth_payload` 标准字段为准。Passkey 结果不会把 Provider 原始 `code` 或 `info` 作为公共字段返回。 Provider 返回空状态且没有二维码或 Passkey 载荷时，平台不会用该空结果覆盖当前 Session。已有 `authorized`、`failed`、`cancelled`、`expired` 或 Passkey 状态按 当前快照返回；Provider 明确返回终态时会清除旧二维码和原始兼容载荷，不会回放 已失效的认证材料。没有可确认状态时返回 409 `provider_not_ready`。
+         */
         post: operations["checkAccountQrAuth"];
         delete?: never;
         options?: never;
@@ -134,7 +232,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 启动二维码授权 */
+        /**
+         * 启动二维码授权
+         * @description TikTok 可在 body 临时传入 Boolean enable_comment 覆盖账号配置；缺省 false，非法类型返回 400 invalid_request。 显式启动或继续二维码授权。WhatsApp Provider 返回 `init` 或尚未生成二维码时， 响应保持 `pending`，不会伪装成可扫码状态。 Provider 已进入 Passkey 时会继续现有流程；响应只保留标准 `auth_payload`， 不返回 Provider 原始 `code`、`info` 或二维码兼容字段。
+         */
         post: operations["startAccountQrAuth"];
         delete?: never;
         options?: never;
@@ -168,7 +269,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 启动验证码类授权 */
+        /**
+         * 启动验证码类授权
+         * @description 启动 `auth_mode=code` 的授权流程。通常发送 `{}`，手机号从账号的 `provider_data.phone` 读取。 WhatsApp 手机号配对从 `data.verify_code` 读取配对码，交由用户在手机端输入， 不调用 `/auth/code`。Telegram 等待用户收到验证码后调用 `/auth/code`， 如需二次密码再调用 `/auth/password`。 `awaiting_code` 仅表示等待用户操作，不代表授权成功；通过 `GET /auth` 查询后续授权状态，并在发送消息前确认账号连接可用。
+         */
         post: operations["startAccountAuth"];
         delete?: never;
         options?: never;
@@ -187,6 +291,26 @@ export interface paths {
         get: operations["listContacts"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/contacts/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 添加联系人
+         * @description 在指定账号所属渠道中添加一个联系人。`phone_number` 和 `username` 至少提供一个； `whatsapp_options` 仅适用于 WhatsApp 账号。 添加失败时，`numeric_code=30017` 表示 Provider 限流，调用方应延迟退避重试； `numeric_code=30018` 表示账号 App State 失步，调用方应等待 Provider 恢复后再重试。 两种细分原因均保持接口原有 HTTP 状态与字符串 `code`。 仅 whatsapp 添加联系人明确未将目标号码识别为有效 WhatsApp 联系人时，返回 HTTP 500、 `code=create_contact_failed` 和 `numeric_code=35009`；`message` 保留完整原始原因，不增加前缀， 原因缺失时为 `Target phone number was not recognized as an active WhatsApp contact`。 调用方应按数字码提示用户核对国家区号、号码及 WhatsApp 注册状态，核对实际响应与页面错误提示后再请求， 不应持续自动重试；该错误不确认号码未注册或永久不可用。其他添加失败沿用原有分类。
+         */
+        post: operations["createContact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -244,6 +368,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/accounts/{account_id}/contacts/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询联系人是否在联系人列表中
+         * @description 查询指定联系人是否存在于目标账号的渠道联系人列表中。
+         */
+        get: operations["getContactMembership"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts/{account_id}/contacts/note": {
         parameters: {
             query?: never;
@@ -285,10 +429,33 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 列出会话 */
+        /**
+         * 列出会话
+         * @description WhatsApp 未提供 label_id 时返回“特别关注”会话，提供时返回指定标签成员；其他 Provider 使用各自的默认会话语义。 Twitter 仅返回用户会话；next_cursor 是不透明值，has_more 为 true 时调用方应将其原样用于下一页，分页结束时 has_more 为 false 且不返回 next_cursor。格式非法或不完整的 cursor 返回 400 provider_invalid_request。
+         */
         get: operations["listConversations"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/conversations/history/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 请求补拉会话历史消息
+         * @description 仅支持 provider=whatsapp 的私聊，不包含 whatsapp-protocol；使用同一会话中一条原生内容消息的完整 before 请求更早的历史。 account_id 必须是单个非空路径段，不能包含空白或斜杠（包括编码斜杠）；入口账号参数校验失败返回 400 invalid_request。 HTTP 202 和 data.status=accepted 仅表示补拉请求已受理，不同步返回消息，也不表示历史已经拉取完成。 先订阅 conversation.history，再发起请求；可用历史批次通过该事件异步返回，并携带 data.history.source=on_demand。 顶层 request_id 仅用于本次 HTTP 请求排障，不是补拉任务 ID，不能用于关联后续回调；一次请求可能对应多个、重复或晚到的批次，也可能没有回调。 继续补拉时，从已收到的原生内容消息中选择最早且 id、sent_at、direction 完整的消息构造 before。 type=call 的合成通话记录不能作为锚点；即使三个字段完整，合成记录 ID 也不是原生消息 ID。before 不增加 type 字段，由调用方选择消息时排除通话记录。 不提供下一页游标或完成状态；不能根据空批次、消息少于 limit 或等待超时判断历史已到底，HTTP 超时后也可能收到回调，不应自动重试。 群聊和频道返回 400 unsupported_conversation_type；其他渠道返回 501 unsupported_by_provider。
+         */
+        post: operations["requestConversationHistory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -302,7 +469,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 获取会话详情 */
+        /**
+         * 获取会话详情
+         * @description 查询目标会话详情。WhatsApp 群明确不存在或当前账号未参与该群时，返回 HTTP 404， `error.code` 为 `conversation_not_found`；`error.numeric_code` 分别为 `34004`（群不存在） 或 `34011`（账号未参与该群）。这类错误不应按临时网关故障自动重试。 未知上游业务失败、网络异常和超时仍返回 HTTP 502。
+         */
         get: operations["getConversation"];
         put?: never;
         post?: never;
@@ -424,7 +594,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 标记会话已读 */
+        /**
+         * 标记会话已读
+         * @description 按账号所属渠道校验已读目标。Telegram 必须提供单个 up_to_message_id， 来自当前账号在该会话收到的消息，例如 message.received 的 data.message.id，且 data.message.direction=inbound；不能使用发送响应的 data.message_id 或事件顶层 id。 将当前账号在该会话中截至该消息（含自身及此前消息）的记录标为已读； 不支持省略消息 ID 标记整个会话，也不支持非空 up_to_message_sender_id。 WhatsApp 的消息级已读须成对提供非空 up_to_message_id 和 up_to_message_sender_id； 省略两者，或两者去除首尾空白后均为空时，标记整个会话。成功返回 data.ok=true；本次操作不查询对方已读状态，也不新增 Webhook 事件。
+         */
         post: operations["markConversationRead"];
         delete?: never;
         options?: never;
@@ -656,6 +829,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/accounts/{account_id}/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 列出本账号帖子
+         * @description 仅支持 TikTok 当前登录账号；其他渠道返回 501 unsupported_by_provider。 非法字段、null、空白 ID、分页范围错误返回 400 invalid_request（10000）。limit 默认 20，范围 1–50。 账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 归属或分页核验未完成返回可重试失败，不能视为资源不存在。 has_more=true 时提供 next_cursor；末页 has_more=false 并省略 next_cursor。 读取失败保留 provider_not_ready、provider_invalid_request、provider_unavailable 分类；其他读取失败返回 502 list_posts_failed（39002）。
+         */
+        get: operations["listPosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/posts/comments/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 列出帖子的一级评论
+         * @description 仅支持 TikTok 当前登录账号；其他渠道返回 501 unsupported_by_provider。 可直接提交已知 post_id，无需先查询帖子列表或详情；目标是否可访问由渠道结果决定。 非法字段、null、空白 ID、分页范围错误返回 400 invalid_request（10000）。limit 默认 20，范围 1–50。 账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 分页核验未完成返回可重试失败，不能视为资源不存在。 第三方 post_id 放在 JSON body，不要求帖子属于当前账号。 TikTok 的 post_id 须为无前导零的正十进制整数字符串；不符合渠道格式时返回 400 provider_invalid_request。 仅保证一级评论，不提供完整回复分页。空列表为 []，has_more=false 时省略 next_cursor。 读取失败保留既有 provider 错误分类；其他读取失败返回 502 list_post_comments_failed（39003）。
+         */
+        post: operations["listPostComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/posts/comments/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 发布一级评论或回复一级评论
+         * @description 仅支持 TikTok；省略 comment_id 时发布一级评论，提供非空白字符串 comment_id 时回复指定的一级评论。其他渠道返回 501 unsupported_by_provider。 不要求帖子属于当前账号；发布或回复无需先查询帖子列表、详情或评论。 接口不预先确认帖子可访问性、评论所属帖子或层级；调用方应提供目标帖子的一级评论 ID。实际是否允许评论或回复由渠道结果决定，不保证任意帖子都可写入。 第三方 post_id、可选 comment_id 和必填 text 放在 JSON body；正文保留实际发送的原文。 comment_id 只有省略字段才表示发布一级评论；显式空串、纯空白、null 或非字符串仍返回 400 invalid_request（10000），不会改为发布一级评论。 TikTok 的 post_id 须为无前导零的正十进制整数字符串；不符合渠道格式时返回 400 provider_invalid_request，comment_id 沿用非空字符串要求。 账号不存在或不属于当前工作空间返回 404 account_not_found（20020）；非法参数返回 400 invalid_request（10000）。 200 data.status=accepted 表示请求已被接受，不表示已展示、送达或一定收到 Webhook；仅可靠取得新评论时附带 comment。 发布一级评论的 comment 不含 parent_comment_id；回复的 comment.parent_comment_id 对应本次请求的 comment_id。 写入后超时、断连或无法确认回执时结果未知，不自动重发；读取未找到评论或回复不能证明此前未创建。 写入前的 provider_not_ready、provider_invalid_request、provider_unavailable 分类保持不变；已确认的业务拒绝保留 provider_invalid_request。 写入后无法确认回执（如超时、断连）返回 502 reply_post_comment_failed（39004），结果可能未知；不自动重试写入。
+         */
+        post: operations["replyPostComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/accounts/{account_id}/posts/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 获取帖子详情
+         * @description 仅支持 TikTok；其他渠道返回 501 unsupported_by_provider。 可直接提交已知 post_id，无需先查询本账号帖子列表。目标是否可访问由渠道结果决定，不保证其他账号的帖子可读取。 JSON body 必填非空字符串 post_id，不接受 null、未知字段或重复键；非法请求返回 400 invalid_request（10000）。 TikTok 的 post_id 须为无前导零的正十进制整数字符串，按原值传递；不符合渠道格式时返回 400 provider_invalid_request。 账号不在当前工作空间返回 404 account_not_found（20020）；可靠确认帖子不存在时返回 404 post_not_found（39000）。 当前账号无法访问目标时返回 403 post_inaccessible（39005），不能据此判断具体是登录、权限还是资源归属原因，也不能视为不存在。 只有可靠取得与请求帖子 ID 一致的资源后才返回标准 Post；上游异常返回失败，不返回部分详情。 现有可选字段仅在可靠取得时提供，不新增帖子媒体或统计计数。 读取失败保留 provider_not_ready、provider_invalid_request、provider_unavailable 分类；其他详情读取失败返回 502 get_post_failed（39006）。
+         */
+        post: operations["getPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounts/{account_id}/runtime/reconnect": {
         parameters: {
             query?: never;
@@ -665,7 +918,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 重连账号运行态 */
+        /**
+         * 重连账号运行态
+         * @description TikTok 重连会应用最新 provider_data.enable_comment；可在 body 中临时传入 Boolean enable_comment 覆盖，false 显式关闭。 字符串、数字或 null 返回 400 invalid_request。轮询默认关闭；关闭不撤回已排队事件。
+         */
         post: operations["reconnectAccountRuntime"];
         delete?: never;
         options?: never;
@@ -699,7 +955,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 启动账号运行态 */
+        /**
+         * 启动账号运行态
+         * @description TikTok 可在 body 中临时传入 Boolean enable_comment 覆盖账号设置；默认沿用 provider_data.enable_comment，缺省 false。 在线 TikTok 账号重复 start 不保证配置更新，配置变化须通过 reconnect 生效。 HTTP 200 表示启动请求已被接受或由当前状态幂等满足，不等同于账号已经连接成功， 也不保证本次实际调用了 Provider。WhatsApp 在真正启动前会先只读探测 Provider； `client_connect=true` 是强在线证据，即使同一响应带有滞后的 QR/Passkey 标签也返回 `running`；`status=init` 且 `client_connect=false` 返回 `starting`，不推断需要授权。 当 Provider 明确返回需要继续授权的状态时，响应会额外包含 `auth_required=true` 和标准化的 `auth_status`；调用方应转入账号授权接口， 不应把 `runtime_status=disconnected` 当作启动接口失败并反复重试。Provider 已进入 QR 流程但二维码仍在异步生成时，`auth_status` 为 `pending`，不会把 Session 写成无二维码内容的 `awaiting_qr_scan`。其他情况下，共享 Session 已处于 `pending`、 `awaiting_qr_scan` 或 Passkey 进行态时，重复调用只返回当前授权提示，不会 再次启动 Provider 或刷新现有授权流程。
+         */
         post: operations["startAccountRuntime"];
         delete?: never;
         options?: never;
@@ -782,6 +1041,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/calls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 准备主动通话
+         * @description 仅 is_beta=true 的内测工作区可用；普通工作区返回 403 beta_feature_not_enabled（41002）。呼入暂未开放，内测资格不会自动开启呼入。 为 WhatsApp 账号准备单聊语音或视频呼叫。创建成功仅表示准备完成，不会立即拨号。 to 与发送消息使用相同的 {id,type} 结构；id 填当前账号下的 conversation_id，type 填会话类型。 首期仅支持 WhatsApp 的 user 目标，id 必须是数字用户标识组成的 @lid 或 @s.whatsapp.net 单聊 JID，最长 128 字符；不支持裸手机号或字符串形式的 to。 group、channel 及其他尚未支持通话的渠道返回 501 unsupported_by_provider；WhatsApp user 目标 JID 无效返回 400 provider_invalid_request。 用户在 expires_at 前打开 join_url，允许麦克风并点击 Start call，媒体连接后才开始拨号。 视频通话的摄像头可选；未允许摄像头时仍可收看远端视频和语音通话。 一个账号最多同时保留一通活跃通话；准备期从创建通话起默认 2 分钟，可由服务端调整，实际截止时间以 expires_at 为准，过期后需重新创建。此期限不限制已接通通话的时长。 join_url 是短期一次性访问链接，应原样传递给预期用户，禁止写入日志或公开分享。 接通和结束通过 call.answered、call.ended 事件通知；内测工作区可使用通配订阅或逐项订阅，外呼不会产生 call.incoming。
+         */
+        post: operations["createCall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calls/{call_id}/hangup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 挂断指定通话
+         * @description 仅内测工作区可用，普通工作区返回 403 beta_feature_not_enabled（41002）。挂断当前账号归属的指定通话。存储保留期内重复挂断已结束通话仍返回其终态对象；通话不存在或不属于该账号返回 404 call_not_found。撤销内测资格前应先结束活动通话并等待准备链接过期；资格撤销不会立即使已发链接失效或强制结束通话。
+         */
+        post: operations["hangupCall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calls/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询账号当前活动通话
+         * @description 仅内测工作区可用，普通工作区返回 403 beta_feature_not_enabled（41002）。当前账号没有活动通话时返回 200 且 data 为空对象 {}；这不表示通话服务不可用。有活动通话时仅返回通话 ID、状态、方向和媒体类型，不返回链接或凭证。
+         */
+        get: operations["getActiveCall"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/messages": {
         parameters: {
             query?: never;
@@ -791,7 +1110,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 发送消息 */
+        /**
+         * 发送消息
+         * @description `message.type=sticker` 用于发送贴纸，当前仅 WhatsApp user/group 支持，不包含 whatsapp-protocol。 url/file_url/file_key 恰好提供一个非空来源；本期 WhatsApp 只支持 HTTP(S) url/file_url，file_key、非空 mentions 或不支持的目标返回 501 unsupported_by_provider。 API 按原字节提交 WebP，不设置静态性、像素尺寸或渠道业务大小限制；静态、动画及具体素材兼容性由渠道判定。 本接口仅检查基本 WebP 容器完整性，不解码或转码。下载与暂存的硬资源上限为 10 MiB（10485760 字节），下载最多 15 秒、3 次跳转。 该上限是本接口的资源边界，不代表渠道接受该大小以内的所有素材。accepted 仅表示受理，不保证送达、素材可解码或动画播放效果。 sticker 不允许 text/caption/contacts/poll/link_preview 等其他内容字段，即使为 null 或空值也返回 400 invalid_request。 sticker 的 provider_data 只能省略或为空对象；非对象为 400 invalid_request，非空对象为 400 provider_invalid_request。 支持既有 reply_to.reply_token；无效或无法解封的 token 返回 400 invalid_reply_token。 基本 WebP 容器不完整、不可接受的素材来源地址或超过硬资源上限时，发送前返回 400 provider_invalid_request、numeric_code=36007，表示贴纸尚未发送。 message 提供具体素材校验原因，原因缺失时为 Invalid sticker media；调用方按数字码判断，修正素材或来源地址后再发送。 非空 provider_data、公共结构错误和实际渠道参数拒绝沿用各自分类，实际渠道参数拒绝仍为 400 provider_invalid_request、numeric_code=30001。 贴纸实际发送失败保留既有 HTTP、code、numeric_code 和专属分类提示，提供可用的具体失败原因；上游未提供时沿用默认提示。其他消息类型保持既有行为。 素材获取的 HTTP 故障、超时、存储或其他准备失败返回 500 send_message_failed、numeric_code=36001，message 提供具体准备失败原因，缺失时沿用默认提示；不使用 36007。 sticker 超时或结果不明时不会自动重发；request_id/client_request_id 仅用于追踪，不提供发送幂等保证。 `message.type=poll` 用于创建投票；当前仅 WhatsApp 的 user/group 目标支持，不包含 `whatsapp-protocol`。 投票必须提供非空白题目、至少两个非空白标题的选项及整数 max_selections（1 到选项数）；原文保持不变。 本项目 WhatsApp 发送策略限制题目最多 255 个 Unicode 字符、选项最多 12 个、每项标题最多 100 个 Unicode 字符，并拒绝完全相同的原文标题；这些不是其他渠道的公共限制或平台硬性限制声明。 WhatsApp 投票不支持 reply_to 或非空 mentions；不支持的渠道、目标或组合返回 HTTP 501 unsupported_by_provider。 投票公共结构、null、未知字段或混合载荷错误返回 HTTP 400 invalid_request；违反 WhatsApp 字段策略或提供 provider_data.context_info/extra 返回 HTTP 400 provider_invalid_request。 创建成功沿用发送响应；引用上下文完整时可选返回 data.reply_token，普通文字消息可通过 reply_to.reply_token 引用该投票，无需等待创建回调。 缺少可引用上下文时省略 token，accepted 状态不因此改变；不能用 message_id 或 provider_ref 代替 token。新投票自身仍不支持 reply_to，不提供投票统计或代替账号投票。 超时或响应不完整时发送结果可能未知，先核对实际消息与回调再决定重试。 `message.type=link_preview` 用于发送自定义链接预览；当前仅 WhatsApp 的 user/group 目标支持，不包含 `whatsapp-protocol`。 公共结构要求非空正文和 HTTP(S) 目标链接；WhatsApp 还要求非空标题、图片 URL，以及目标链接原文出现在正文中。 本项目 WhatsApp 发送策略限制标题最多 255 个 Unicode 字符、摘要最多 1024 个 Unicode 字符；这不是其他渠道的公共限制或平台硬性限制声明。 WhatsApp 链接预览不支持 `reply_to` 或非空 `mentions`，不支持的渠道、目标或组合返回 HTTP 501 `unsupported_by_provider`。 公共字段格式错误返回 HTTP 400 `invalid_request`；违反上述 WhatsApp 字段策略或使用覆盖卡片数据的渠道扩展返回 HTTP 400 `provider_invalid_request`。 本接口不抓取目标网页生成预览，调用方提供卡片内容。HTTP 200 / accepted 不表示已送达，也不保证一定收到自同步回调。 WhatsApp 消息发送被平台明确限制时，返回 HTTP 502、`code=provider_unavailable` 和 `numeric_code=30019`。 调用方应按该数字码停止对此类失败的自动重试，确认平台限制解除后再发送。 `whatsapp` 群消息发送被明确拒绝为需要管理员权限时，返回 HTTP 502、`code=provider_unavailable` 和 `numeric_code=34012`，`message` 为 `Group administrator privileges are required to send messages to this group`。 调用方应停止自动重试，核实群发言权限和当前账号角色，由群管理员调整权限后再发送。 此错误不表示该群一定是社群公告群，也不确认群设置或账号角色的具体状态；不适用于 `whatsapp-protocol`。 Device API 在 `whatsapp` 发送操作中识别到账号受限时，返回 HTTP 502、`code=provider_unavailable` 和 `numeric_code=20102`，与该渠道账号受限 Webhook 的数字码一致。调用方应停止该账号的自动发送和重试， 引导用户在官方 WhatsApp 客户端检查并处理限制，恢复正常后再按需重新授权。 此分类不会自动修改账号状态或产生额外回调，不能仅因运行状态为 `running` 恢复发送。 Device API 识别到 `whatsapp-protocol` 账号当前登录受限时，返回 HTTP 502、`code=provider_unavailable` 和 `numeric_code=30020`。调用方必须停止自动重试，引导用户前往官方 WhatsApp 客户端检查， 处理完成并重新授权后再恢复发送。上述错误都不表示永久封号，也不能据此认定账号已确认封禁或存在固定恢复期限； 其他发送失败沿用原有错误分类。 Device API 识别到 WhatsApp 账号连接未建立时，返回 HTTP 502、`code=provider_unavailable` 和 `numeric_code=30021`，`message` 保留原始连接错误；此错误不表示已登出或授权失效。 调用方应暂停发送，调用 `POST /v1/accounts/{account_id}/runtime/refresh`，按最新状态恢复连接， 确认 `runtime_status=running` 后再发送。失败请求不会自动重发或重连。 `numeric_code=30010` 的 `message` 在有原因时为 `Provider operation failed: <原始错误原因>`， 没有原因时为 `Provider operation failed`；调用方应按数字码判断，不依赖可变化的文案。
+         */
         post: operations["sendMessage"];
         delete?: never;
         options?: never;
@@ -810,7 +1132,7 @@ export interface paths {
         put?: never;
         /**
          * 编辑消息文本
-         * @description 当前主要由支持该能力的 provider 实现，通常仅支持文本消息。
+         * @description 由支持该能力的渠道提供，通常仅适用于文本消息。
          */
         post: operations["editMessage"];
         delete?: never;
@@ -894,10 +1216,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 列出 webhook endpoint */
+        /**
+         * 列出 webhook endpoint
+         * @description 省略 account_id 时只列当前工作空间的 Webhook 端点；指定时只列该账号的独立配置。 账号没有独立配置时 data 为 []，不混入继承的工作空间配置。 显式账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。
+         */
         get: operations["listWebhookEndpoints"];
         put?: never;
-        /** 创建 webhook endpoint */
+        /**
+         * 创建 webhook endpoint
+         * @description body 省略 account_id 时创建工作空间端点；指定公开账号 ID 时创建该账号的独立端点。 账号独立配置整体优先于工作空间配置，停用或未订阅某类事件不会回退；删除最后一个独立端点后，后续首次投递恢复继承。 account_id 只接受 body 中的非空字符串，不接受 query、null 或重复字段。 字段名必须精确使用 account_id；body 或 query 中的大小写变体返回 400 invalid_request。 账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 有效的账号配置请求直接创建账号端点，不改建为工作空间端点。 同一 account_id 最多一个 active 独立端点；创建 status=active 时已有 active 端点返回 409 account_webhook_already_exists（40008）。 status=inactive 可创建多个，不占用 active 名额。更换 URL 或其他配置使用 PATCH 更新已有端点。工作空间端点仍可配置多个；历史多 active 端点不会自动清理。 创建后应核对响应的 account_id；账号绑定不可通过 PATCH 修改。
+         */
         post: operations["createWebhookEndpoint"];
         delete?: never;
         options?: never;
@@ -912,15 +1240,24 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 获取 webhook endpoint */
+        /**
+         * 获取 webhook endpoint
+         * @description 按 endpoint_id 获取当前工作空间内的端点，包括工作空间和账号端点。 可选 query account_id 仅校验端点的账号归属；不匹配返回 400 invalid_request。 显式账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 端点不存在时保持 HTTP 500 get_webhook_endpoint_failed，numeric_code 为 40006。
+         */
         get: operations["getWebhookEndpoint"];
         put?: never;
         post?: never;
-        /** 删除 webhook endpoint */
+        /**
+         * 删除 webhook endpoint
+         * @description 按 endpoint_id 幂等删除当前工作空间内的端点；可选 query account_id 仅校验原绑定。 已找到端点但账号归属不匹配返回 400 invalid_request，不执行删除。 显式账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 端点确实不存在时返回 204；删除账号最后一个独立端点后，后续首次投递恢复继承工作空间配置。 原端点尚未完成的投递停止，不转投工作空间；已经发出的 HTTP 请求无法撤回。
+         */
         delete: operations["deleteWebhookEndpoint"];
         options?: never;
         head?: never;
-        /** 更新 webhook endpoint */
+        /**
+         * 更新 webhook endpoint
+         * @description 提交 url、status 和需要保留的完整配置。省略 body account_id 时保留端点的已有归属。 提供 account_id 仅校验原绑定一致；不允许切换账号、把工作空间端点改为账号端点或清空绑定。 account_id 不接受 query、null 或重复字段，归属不匹配返回 400 invalid_request。 字段名必须精确使用 account_id；body 或 query 中的大小写变体返回 400 invalid_request。 显式账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 账号端点可直接从停用恢复启用，归属保持不变。 inactive 改为 active 时，账号已有其他 active 端点返回 409 account_webhook_already_exists（40008）；原端点已为 active 且保持 active 时允许更新，包括历史多 active 配置。 省略 signing_secret 关闭签名；省略 retry_policy 恢复默认策略；订阅数组整体替换。 端点不存在时保持 HTTP 500 update_webhook_endpoint_failed，numeric_code 为 40006。
+         */
         patch: operations["updateWebhookEndpoint"];
         trace?: never;
     };
@@ -933,7 +1270,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 停用 webhook endpoint */
+        /**
+         * 停用 webhook endpoint
+         * @description 停用当前工作空间内的端点；可选 query account_id 仅校验原绑定，不匹配返回 400 invalid_request。 显式账号不存在或不属于当前工作空间返回 404 account_not_found（20020）。 停用账号全部独立端点表示暂停该账号回调，不恢复工作空间继承。 端点不存在时保持 HTTP 500 deactivate_webhook_endpoint_failed，numeric_code 为 40006。
+         */
         post: operations["deactivateWebhookEndpoint"];
         delete?: never;
         options?: never;
@@ -960,48 +1300,919 @@ export interface paths {
         trace?: never;
     };
 }
-export type webhooks = Record<string, never>;
+export interface webhooks {
+    accountAuthFailed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * WhatsApp 账号授权失效事件
+         * @description 本节描述 WhatsApp 账号授权失效回调。部分事件在 `data.error` 中提供结构化失败原因， 业务方按 `code` 或 `numeric_code` 分支，不根据 `message` 判断。 `data.error` 缺失不表示成功，旧事件或其他失败场景可能没有该对象；仍须检查事件类型和状态。 `account_restricted` 只表示当前登录受限，不代表已确认封禁、永久封禁或固定恢复期限。 原有 `last_error` 保持兼容，账号与会话查询不会因此增加错误对象。
+         */
+        post: operations["receiveAccountAuthFailedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    accountProfileUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 账号公开资料更新事件
+         * @description 账号的公开资料完成同步后投递。目前由 WhatsApp 名称或账号头像事件触发。 `display_name` 按 BusinessName 优先、PushName 回退的规则生成； `avatar_url` 为空表示当前确认没有可用头像；`changed_fields` 标识本次实际变化字段。 `source` 用于区分全量同步、当前账号主动改名与头像变化。
+         */
+        post: operations["receiveAccountProfileUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    accountStarted: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 账号运行态上线事件
+         * @description 账号与 Provider 建立运行连接后投递。`runtime_status` 只使用平台标准值 `running`；Provider 原始值 `ready`、`online`、`connected` 等不会对外透传。
+         */
+        post: operations["receiveAccountStartedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    callAnswered: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 通话已接听事件
+         * @description 仅向具备内测资格且订阅匹配的工作区投递；内测工作区的 `*`、空数组或省略订阅均包含通话事件，具体事件列表则按列表匹配。投递及重试时重新核验资格。呼入或外呼的语音/视频通话已接通，data.call.state 为 active；不携带 join_url。呼入暂未开放；message.* 通话记录不受此门禁影响。
+         */
+        post: operations["receiveCallAnsweredWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    callEnded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 通话已结束事件
+         * @description 仅向具备内测资格且订阅匹配的工作区投递；内测工作区的 `*`、空数组或省略订阅均包含通话事件，具体事件列表则按列表匹配。投递及重试时重新核验资格。呼入或外呼的语音/视频通话已结束，data.call.state 为 ended；原因保持在 data.reason，不携带 join_url。呼入暂未开放；message.* 通话记录不受此门禁影响。
+         */
+        post: operations["receiveCallEndedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    callIncoming: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 呼入通话事件
+         * @description 呼入暂未开放，内测资格不会自动开启呼入。该事件仅向具备内测资格且订阅匹配的工作区投递；内测工作区的 `*`、空数组或省略订阅均包含通话事件，具体事件列表则按列表匹配。该事件仅表示 inbound。`join_url` 是短期、一次性的浏览器接听链接，不应持久化或写入日志。
+         */
+        post: operations["receiveCallIncomingWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    callMessageReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * WhatsApp 通话消息创建事件
+         * @description 本节描述现有 `message.received` 事件中 `data.message.type=call` 的通话子类型； 首期仅支持 `whatsapp`，不包含 `whatsapp-protocol` 或群通话，不改变普通消息格式。 同时订阅 `message.received` 和 `message.updated` 可接收邀请、接听与结束通知，沿用 endpoint 的签名配置。 邀请创建一条通话消息，`offered` 不表示已接听。媒体类型未知时省略。 按顶层 `id` 去重，按 `provider + account_id + data.message.id` 关联消息记录。 已接听或已结束记录收到迟到邀请时只补全缺失字段，不恢复来电状态，不再次提醒。 通话消息 ID 仅用于记录关联，不代表支持发送、回复、编辑、撤回或转发该记录。
+         */
+        post: operations["receiveCallMessageReceivedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    callMessageUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * WhatsApp 通话消息状态更新事件
+         * @description 本节描述现有 `message.updated` 事件中 `data.message.type=call` 的通话子类型； 首期仅支持 `whatsapp` 单聊，接听确认或收到结束信号时更新原通话记录，不新增第二条消息。 邀请、接听与结束的 `data.message.id`、`data.message.call.id` 相同，三个阶段的顶层事件 `id` 不同。 通话更新按字段合并，嵌套 `call` 对象也逐字段合并；缺失字段保留原值，不用整个对象替换。 接听和结束通知可提供原通话发起者 `sender` 和对端会话 `conversation`；无法确认的字段单独省略。 不提供发起方向或原消息发送时间，不能覆盖原消息排序时间；缺少身份字段不影响通知投递。 `accepted` 表示收到接听确认；时间可靠时提供 `accepted_at`，未知时省略，不携带 `ended_by` 或 `end_reason`。 接听确认可按稳定消息 ID 关联；尚无原记录时补建最小已接听记录。 结束时没有原记录则补建最小已结束记录；会话缺失时先按消息 ID 保存待关联记录。 状态优先级为 `ended > accepted > offered`，`ended` 为终态；本规则只适用于通话消息。 迟到接听只补接听事实和时间，不能恢复已结束状态；迟到邀请不能恢复来电或再次提醒。 业务方独立保存已收到接听确认的事实，即使 `accepted_at` 缺失或状态已变为 `ended` 也应保留。 未收到接听确认仍是未知，不能将记录直接归类为未接来电。接听确认不保证媒体连接已建立， 也不能据此推断拒接、忙线或计算实际媒体通话时长。 结束通知可提供 `end_reason`：`timeout` 表示收到超时原因，`rejected_elsewhere` 表示其他端拒接， 不推断具体设备或执行方。这两种原因不携带 `ended_by`，未知原因省略，不输出任意原因字符串。 已有接听事实和时间应继续保留，不能因结束原因覆盖成未接听；无接听事实时可展示“呼叫超时”或“其他端拒接”。
+         */
+        post: operations["receiveCallMessageUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    contactUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 联系人通讯录名称更新事件
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 可精确订阅 `contact.updated`；省略订阅、空数组或 `*` 也会接收该新增事件。 仅修改 `data.contact.address_book` 中出现的保存名字段；空字符串表示清空，缺省保持原值，null 非法，不覆盖对方昵称或账号本人资料。 `changed_fields` 与实际提供的名称字段精确对应，不证明服务端已比对旧值。 `contact.id` 可关联联系人列表中同 ID 的资源，不能据此推算会话；可靠 `conversation_id` 缺失时仍可更新通讯录记录。WhatsApp 详情查询使用已确认的 conversation_id（LID），不能直接使用 PN 资源 ID。 WhatsApp 详情在已有 LID 与 PN 映射时可能返回不同的 PN 资源 ID；成功回查也不保证详情 id 与事件 contact.id 相同。保留原事件资源键，不用详情返回的 id 自动替换它或合并不同 PN/LID 记录。 `full_sync` 只表示收到的同步快照，不承诺完整通讯录、每次同步必有事件或同步完成通知。 按事件 ID 幂等；以可靠 changed_at 防止旧快照覆盖新名称。未知或同时间冲突不按接收顺序认定最新名称，occurred_at 不能代替 changed_at。
+         */
+        post: operations["receiveContactUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    conversationDisappearingMessagesUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 会话限时消息设置更新事件
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用已有 `conversation.updated`；`data.event.change_type=disappearing_messages`，不新增订阅名称或设置写接口。 `disappearing_messages` 是本次完整设置快照，整体替换该对象；会话其他资料不受影响。 开启时 `enabled=true` 且 `duration_seconds` 为正数；关闭时明确提供 `enabled=false` 和 `duration_seconds=0`，缺失不表示关闭。 操作者与可靠 `changed_at` 未知时省略；`occurred_at` 不保证是可靠操作时间，不可代替它判断新旧。 按事件 ID 幂等，同值快照也可能来自不同事件。乱序使用可靠 changed_at；未知或同时间冲突不能按回调接收顺序推断最新设置。 同次操作可能另有群变化通知，应分别处理；历史消息不重放设置更新，也不保证提供当前设置快照。 设置变化不删除已有消息或业务系统副本，不提供逐消息到期时间、自动删除通知或定时器。
+         */
+        post: operations["receiveConversationDisappearingMessagesUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    conversationHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 按需补拉的会话历史消息
+         * @description provider=whatsapp 的私聊历史补拉复用 conversation.history；按需批次携带 data.history.source=on_demand，自动历史同步不要求该字段。 data.messages[] 是扁平消息数组，能够确定会话的空批次可返回 messages=[]；无法确定会话时不会补造会话或消息。 自动历史同步与按需补拉使用相同的历史保留与媒体获取规则：默认每批每会话最多保留最近 100 条消息，并按已保留的最近 100 条消息（文本消息也计数），对当前支持的普通附件、商品图片和交互头部媒体尝试获取资源。历史保留数量和媒体获取范围可由服务配置独立调整；不设历史条数上限时仍只处理实际收到的批次，不主动补齐全部历史；不设额外媒体窗口时，对本批已保留消息中的所有受支持媒体尝试获取。不保证收到 100 条消息或每条媒体都获得可访问的 URL。请求 limit 仍为 1～50，省略时为 50，不控制媒体窗口。 普通附件和交互头部附件获取成功且提供有效 URL 时 expired=false，获取失败或超出所配置的媒体窗口时为 true；媒体恢复后应同时合并本次 url 和 expired=false，覆盖旧 true，缺失字段不清空旧状态。商品图片仍按实际提供的 product.image_url 保存，URL 不保证永久有效。 按 provider + account_id + data.conversation.id + data.messages[].id 逐条合并消息；顶层 id 用于识别重复批次，不能替代逐消息处理，也不能仅因批次 ID 相同而丢弃整批消息。不将回调顺序视为请求顺序。 只有具有原生消息 ID 且 id、sent_at、direction 完整的内容消息才可构造下一次 before；type=call 的合成通话记录不可用，缺失字段时不使用 occurred_at、当前时间或默认方向替代。 不提供 request_id 关联、下一页游标、分片进度或完成状态。空批次、消息不足 limit 或等待超时均不表示历史已到底。 按需补拉不触发 account.history.synced，不应将其当作账号初始化完成信号。
+         */
+        post: operations["receiveConversationHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    groupSettingsUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 群发言权限和邀请链接变化
+         * @description 复用 group.updated。公告模式保留明确 true/false，邀请链接变更只通知缓存失效；无可靠 changed_at 或状态冲突时回查详情，邀请变化始终查询当前链接。
+         */
+        post: operations["receiveGroupSettingsUpdatedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageCommerceHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 历史消息中的商品和订单卡片
+         * @description 支持接收历史消息中的商品和订单卡片，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `conversation.history`，`data.messages[]` 为扁平消息数组，同批可以混合商品、订单和普通消息。 按消息 ID 合并已有记录，保留本次未提供的字段；消息 ID 缺失时不以事件 ID 或商品、订单 ID 替代。 历史批次不保证完整归档；图片缺失、过期或暂不可用时仍保留其他有效商品、订单信息。
+         */
+        post: operations["receiveMessageCommerceHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageCommerceReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 商品和订单消息接收事件
+         * @description 支持接收商品和订单卡片，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.received`；`data.message.type=product/order` 分别对应 `product/order` 对象，二者不能同时出现。 各业务字段按实际提供的信息输出，金额与币种可以分别缺失；零金额和零数量保留，不生成订单明细。 可与可选 `referral` 共存；WhatsApp 商品和订单回调依赖原消息 ID，缺少该 ID 时不提供可关联的卡片事件。 顶层事件 `id` 仅用于事件去重，不能替代消息 ID。 不新增发送类型、商品写入、订单写入或支付能力。
+         */
+        post: operations["receiveMessageCommerceReceivedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageCommerceUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 商品和订单消息编辑事件
+         * @description 支持接收商品和订单卡片的消息编辑，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.updated`；`data.message.id` 为被编辑消息的非空 ID，顶层 `id` 是本次事件的幂等键。 按 provider、account_id、会话 ID 和消息 ID 关联原消息，仅合并本次提供的字段，缺失不清空。 该事件表示消息内容更新，不承诺订单生命周期通知；`order.status=accepted` 不表示付款成功。
+         */
+        post: operations["receiveMessageCommerceUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageContactCardsHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 联系人名片历史批次
+         * @description 复用实际收到的 conversation.history；messages 为扁平消息数组，允许与其他消息混排，不保证历史完整。
+         */
+        post: operations["receiveMessageContactCardsHistoryWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageContactCardsReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 联系人名片接收
+         * @description 复用 message.received，contacts 保留一条消息中的完整有序名片。旧单张 text 继续兼容，多名片不提供引用句柄。
+         */
+        post: operations["receiveMessageContactCardsReceivedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageContactCardsUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 联系人名片编辑
+         * @description 复用已有 message.updated，按目标消息 ID 整体替换实际提供的 contacts；缺省不清空。
+         */
+        post: operations["receiveMessageContactCardsUpdatedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageDeviceIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 消息设备信息
+         * @description 复用普通消息的 message.received 与 message.updated，不新增订阅事件。 仅 provider=whatsapp 支持可选 data.sender.device_id；其他渠道不返回。 sender.id 保持不含设备后缀的账号级标识。发送设备号缺失表示未知，明确的 0 是有效编号。 账号登录设备号通过账号详情 provider_profile.device_id 获取；Webhook 不返回 data.account.device_id。 设备号比较、账号设备资料维护及历史消息判断由调用方自行处理。 历史或补拉重建消息、通话、回执、反应和撤回事件不提供发送设备字段，不能根据设备号推断设备新旧。
+         */
+        post: operations["receiveMessageDeviceIdentityWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageInteractiveHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 历史消息中的按钮、模板及选择响应
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`；仅接收，不新增发送类型、模板注册或事件订阅名称。 卡片与响应分别为 `interactive/interactive_response`，可与可选 `referral` 共存。 WhatsApp 当前不提供 `index/selected_index`；使用可靠 ID 及实际提供的引用关联，不能按标题或最近消息猜测。 复用 `conversation.history`；`data.messages[]` 是扁平数组，可混合交互、商品、订单和普通消息。 按 provider、account_id、会话 ID 和消息 ID 关联，批次时间不替代消息的 sent_at。
+         */
+        post: operations["receiveMessageInteractiveHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageInteractiveReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 按钮、模板及选择响应接收事件
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`；仅接收，不新增发送类型、模板注册或事件订阅名称。 卡片与响应分别为 `interactive/interactive_response`，可与可选 `referral` 共存。 WhatsApp 当前不提供 `index/selected_index`；使用可靠 ID 及实际提供的引用关联，不能按标题或最近消息猜测。 复用 `message.received`。WhatsApp 交互消息依赖原消息 ID；顶层事件 ID 仅用于事件去重。 缺少媒体 URL 或部分组件不丢其他有效信息；未知交互变体不承诺为本类型。
+         */
+        post: operations["receiveMessageInteractiveReceivedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageInteractiveUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 按钮、模板及选择响应的消息编辑事件
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`；仅接收，不新增发送类型、模板注册或事件订阅名称。 卡片与响应分别为 `interactive/interactive_response`，可与可选 `referral` 共存。 WhatsApp 当前不提供 `index/selected_index`；使用可靠 ID 及实际提供的引用关联，不能按标题或最近消息猜测。 复用 `message.updated`，`data.message.id` 是被编辑消息的非空 ID。 仅合并本次提供的字段；嵌套对象逐字段合并，buttons 若提供则整体替换有序数组，缺失不清空。
+         */
+        post: operations["receiveMessageInteractiveUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLinkPreviewHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 历史消息中的链接预览
+         * @description 当前适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `conversation.history`；data.messages[] 为扁平数组，可混合链接预览、商品、交互和普通消息。 按 provider、account_id、会话 ID 和消息 ID 关联；批次 occurred_at 不替代消息 sent_at。 title/description 按出现字段合并，空字符串表示清空，缺省不改；null 和全空白字符串不是合法值。 普通含 URL 文本保持 text；WhatsApp 当前不提供预览 image_url，不因图片缺失丢弃其他可靠预览字段。
+         */
+        post: operations["receiveMessageLinkPreviewHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLinkPreviewReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 链接预览消息接收事件
+         * @description 当前适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.received`，消息类型为 `link_preview`，目标链接必需；标题、摘要和图片仅在有可靠信息时提供。 title/description 保留明确提供的字符串；空字符串表示清空，缺省表示不改，null 和全空白字符串不是合法值。 WhatsApp 当前不提供接收侧 image_url；该字段保留为公共可选契约，不应从发送请求推断回调一定包含图片。 普通正文包含 URL 不会自动成为预览卡片；可与 referral 共存，正文和已有引用字段保持各自语义。 自同步可为 outbound，不能将所有 message.received 当成对方发来的消息。 消息 ID 未提供时不能用顶层事件 ID 替代；只有可靠消息 ID 时才可能提供 reply_token。
+         */
+        post: operations["receiveMessageLinkPreviewReceivedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLinkPreviewUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 链接预览消息编辑及转普通文本事件
+         * @description 当前适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.updated`，data.message.id 为被编辑消息的非空 ID；type=link_preview 时 link_preview.url 仍为必需字段。 按出现字段逐项合并消息和嵌套预览对象，缺少 title/description/image_url 不表示清空。 title/description 明确为 "" 时清空对应字段；null 和全空白字符串不是清空指令，也不是合法值。 WhatsApp 当前不提供接收侧 image_url；不能根据省略字段覆盖已有业务资料。 编辑后成为普通文本时明确提供 type=text 且不带 link_preview；业务方应先清除原消息的预览对象，再合并本次提供的正文等字段。
+         */
+        post: operations["receiveMessageLinkPreviewUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLiveLocationHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 实时位置历史识别
+         * @description 只对实际收到的 conversation.history 消息识别类型，不提供坐标轨迹或历史查询能力。
+         */
+        post: operations["receiveMessageLiveLocationHistoryWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLiveLocationReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 实时位置识别
+         * @description 复用 message.received，只提供 live_location 类型标记，建议提示在 WhatsApp 查看；不提供持续坐标、共享时长或结束状态。
+         */
+        post: operations["receiveMessageLiveLocationReceivedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageLiveLocationUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 实时位置内容编辑识别
+         * @description 仅描述已收到的既有 message.updated 形态，不表示提供持续位置更新服务或承诺客户端可编辑此内容。
+         */
+        post: operations["receiveMessageLiveLocationUpdatedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messagePinUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 单条消息置顶状态更新事件
+         * @description 适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.updated`，`data.message.id` 是被操作的原消息 ID，`data.event.change_type=message_pin`。 `message.pin` 是本次置顶状态快照：每次整体替换该对象，缺失有效期也清除旧有效期；消息其他字段仍按稀疏更新处理。 `pinned=false` 明确取消置顶，不提供时长或有效期。`duration_seconds=0` 不代表永久置顶。 `expires_at` 仅在提供可靠 `changed_at` 和正时长时存在；不能用收到回调的时间重新计算有效期。 `actor` 是操作者，`sender` 仅在原消息作者可靠时提供，两者未知时省略；不提供原消息类型、方向、正文或发送时间。 原消息尚未保存也可收到更新，按目标消息 ID 暂存。到期不保证收到新的取消事件；历史消息不提供置顶状态快照。 本事件与会话置顶分开；既有 `POST /v1/messages/pin` 的路径、支持范围及响应不变，调用成功不保证产生本回调。
+         */
+        post: operations["receiveMessagePinUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messagePollHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 历史投票创建内容
+         * @description 沿用 conversation.history 订阅。历史只补充实际收到的静态投票题目与选项，可与其他消息混合；不重放 poll_vote 或累计选择结果，不能据此声称恢复全部投票。创建消息仍不提供 reply_token。
+         */
+        post: operations["receiveMessagePollHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messagePollReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 投票创建消息
+         * @description 沿用 message.received 订阅。当前仅 WhatsApp 支持投票创建。自同步可为 outbound；投票内容不包含累计票数、媒体正文或 reply_token。选项 ID 为不透明值，调用方使用回调值。
+         */
+        post: operations["receiveMessagePollReceivedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messagePollVoteUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 投票选择更新
+         * @description 沿用 message.updated 订阅，event.change_type=poll_vote。message.id 是原投票；actor.id 与 voter_id 是同一投票人，不是原作者。decoded 用完整选择替换此人记录，空数组明确撤票；unavailable 保留旧结果，不提供 selected_option_ids。更新可先于创建到达，先暂存关联；可靠 voted_at 缺失或冲突时不能凭到达顺序覆盖。此事件不提供操作消息正文、sender、direction、sent_at 或 reply_token。
+         */
+        post: operations["receiveMessagePollVoteUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageReferralHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 历史消息中的广告归因信息
+         * @description 支持接收历史消息中的广告归因信息，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `conversation.history`；每条历史消息的可选 `referral` 与实时消息使用相同结构。 `data.messages[]` 是扁平消息对象，同批消息可以没有归因信息；不将实时归因复制给同会话的其他消息。 历史事件只表示本次收到的历史批次，不保证全部消息或全部广告来源均可补齐。 按顶层 `id` 去重，按 `provider + account_id + data.conversation.id + data.messages[].id` 与实时消息合并。 缺失 `referral` 或其中字段表示本次没有提供该信息，不应清空已保存的归因信息。
+         */
+        post: operations["receiveMessageReferralHistoryWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageReferralReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 带广告归因信息的消息事件
+         * @description 支持接收消息广告归因信息，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.received`，仅在当前消息确有可用来源信息时附加 `data.message.referral`，不产生独立广告事件或新的消息类型。 仅确认广告来源时提供 `source=ad`；字段缺失表示未知，不能据此推断不是广告来源。 归因信息只属于当前消息，不继承其引用消息的归因。保留 `source_url` 查询参数，不按链接自行推断点击标识。 按顶层 `id` 去重；提供 `data.message.id` 时，按 `provider + account_id + data.conversation.id + data.message.id` 关联消息，用 `direction` 判断收发方向。 `data.message.id` 可能缺失，此时仅保存本次事件，不伪造消息关联，也不把顶层事件 `id` 当作消息 ID。 本节只扩展接收结构，不支持通过发送接口构造广告归因信息。
+         */
+        post: operations["receiveMessageReferralWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    messageReferralUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 带广告归因信息的消息编辑事件
+         * @description 支持接收消息编辑中的广告归因信息，仅适用于 `provider=whatsapp`，不包含 `whatsapp-protocol`。 复用 `message.updated`，编辑后的当前消息携带可用来源信息时附加 `data.message.referral`。 同时订阅 `message.received`、`message.updated` 和 `conversation.history` 可处理新消息、编辑与历史批次。 `data.message.id` 是被编辑消息的 ID；按顶层 `id` 对事件去重，按 `provider + account_id + data.conversation.id + data.message.id` 关联原消息。 只合并本次提供的字段；缺失 `referral` 或其中字段不清空已有信息，也不把一次编辑的归因复制到其他消息。
+         */
+        post: operations["receiveMessageReferralUpdatedWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    postCommentCreated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 新评论事件
+         * @description 支持符合识别与当前账号帖子归属条件的 post.comment.created；需确认接入环境已开放通知后启用。 通知范围有限，不保证覆盖所有评论和回复；未知通知不作为公开事件。parent_comment_id 仅在父子关系可靠时提供，缺失不能证明一级评论或可回复目标。 回复时应确认通知评论属于目标帖子的一级评论；回复接口不预先确认其所属帖子或层级，不能仅凭通知字段缺失认定可回复。 评论轮询默认关闭。provider_data.enable_comment=true 后需启动或重连生效；在线账号修改配置必须重连，start 成功不证明配置已更新。 尽力而为通知可能延迟、重复、乱序或遗漏，不保证实时、完整历史或每条评论都有事件；接收方按事件 id 去重。 精确订阅需包含 post.comment.created，空订阅和 * 会包含该类型；订阅本身不会开启轮询。 已开启轮询且具有匹配订阅的账号，在环境开放后可能开始收到该事件；启用前须核对现有配置与接收端处理能力。
+         */
+        post: operations["receivePostCommentCreatedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+}
 export interface components {
     schemas: {
+        /**
+         * @example {
+         *       "id": "acc_xxx",
+         *       "name": "Customer Support",
+         *       "provider": "whatsapp",
+         *       "region": "sg",
+         *       "status": "active",
+         *       "runtime_status": "running"
+         *     }
+         */
         Account: {
             /** @description 授权模式，例如 qrcode、code、session。 */
             auth_mode?: string;
+            billing?: components["schemas"]["AccountBilling"];
             capabilities?: string[];
             /** @example acc_xxx */
             id: string;
             metadata?: components["schemas"]["FreeFormObject"];
             name: string;
             provider: components["schemas"]["ProviderName"];
-            /** @description provider 侧账号公开标识。 */
+            /** @description 渠道侧账号公开标识。 */
             provider_account_ref?: string;
             provider_profile?: components["schemas"]["ProviderProfile"];
+            /** @description 客户显式配置的代理；不返回平台默认出口凭据。 */
             proxy?: components["schemas"]["FreeFormObject"];
+            /** @description 账号选择的默认网络出口地区。 */
             region: string;
-            runtime_status?: components["schemas"]["RuntimeStatus"];
+            runtime_status: components["schemas"]["RuntimeStatus"];
             /** @description 账号资源状态，例如 active、inactive、disabled。 */
             status: string;
+        } & unknown;
+        /** @description 独立的资金业务状态，不与 runtime_status 混用；周期时间按 RFC 3339 UTC Z 返回。 */
+        AccountBilling: {
+            /** Format: int64 */
+            amount_minor: number;
+            /** @constant */
+            currency: "USD";
+            operation_id: string;
+            /** Format: date-time */
+            period_end_at: string;
+            /** Format: date-time */
+            period_start_at: string;
+            /** @enum {string} */
+            state: "ACTIVE" | "DELETING" | "DELETED" | "COMPENSATED" | "REVIEW";
         };
-        AccountRequest: {
-            auth_mode?: string;
+        /** @description 创建账号请求。`whatsapp-protocol` 凭证只能提交到 `/v1/accounts/{account_id}/auth/session` 的嵌套 `whatsapp-protocol` 对象；不能通过 provider_data 提交。`whatsapp-protocol` 账号不能在该 provider 与其他 provider 之间切换。 */
+        AccountCreateRequest: {
+            /** @enum {string} */
+            auth_mode: "qrcode" | "code" | "session";
             capabilities?: string[];
             metadata?: components["schemas"]["FreeFormObject"];
             name?: string;
-            provider: components["schemas"]["ProviderName"];
+            provider: components["schemas"]["ProviderInputName"];
             provider_account_ref?: string;
+            /** @description TikTok 可设置 `provider_data.enable_comment` 为 Boolean，默认 false；字符串、数字、null 均返回 400 invalid_request。 在线修改后需 reconnect 生效，start 成功不证明配置已应用；关闭不撤回已排队事件。 渠道扩展配置。创建 Telegram 账号时，`provider_data.api_id` 和 `provider_data.api_hash` 均为可选，适用于 `auth_mode=code`、`qrcode` 和 `session`；未指定自定义应用凭证时使用平台默认 Telegram 应用凭证。 使用自定义应用凭证时，请成对提供同一 Telegram 应用的 `api_id` 和 `api_hash`，两者均使用字符串。 需要使用平台默认凭证但默认配置不可用时，创建请求失败；平台调整默认凭证不会自动替换已有账号凭证。 */
             provider_data?: components["schemas"]["FreeFormObject"];
             proxy?: components["schemas"]["FreeFormObject"];
             region: string;
             runtime_status?: components["schemas"]["RuntimeStatus"];
             status?: string;
         };
+        AccountListResult: {
+            /** @description 是否还有下一页。 */
+            has_more: boolean;
+            items: components["schemas"]["Account"][];
+            /** @description 下一页的不透明游标，仅在 has_more=true 时返回；续页时原样传入 cursor。 */
+            next_cursor?: string;
+        };
+        /** @description Safe public business operation result. */
+        AccountOperation: {
+            account_id?: string;
+            /** @enum {string} */
+            kind: "QUOTE" | "CREATE" | "DELETE" | "COMPENSATE";
+            last_error_code?: string;
+            operation_id: string;
+            /** @enum {string} */
+            state: "QUOTED" | "CONSUMED" | "EXPIRED" | "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED" | "REVIEW";
+        };
+        AccountProfileUpdatedWebhookEvent: {
+            /** @description device-api 签发的账号 public_id。 */
+            account_id: string;
+            data: {
+                /** @description 渠道账号引用；渠道无法提供引用时可以省略该对象。 */
+                account?: {
+                    /** @description 渠道侧账号标识；无法提供时可以省略。 */
+                    provider_account_ref?: string;
+                };
+                event: {
+                    /** @description 本次相对已保存账号资料实际变化的公开字段；兼容旧事件，字段可以省略。 */
+                    changed_fields?: ("display_name" | "push_name" | "business_name" | "avatar_url")[];
+                    /** @enum {string} */
+                    kind: "account_profile_updated";
+                    /**
+                     * @description `full_sync` 表示全量同步完成后的快照；`self_rename` 表示当前账号主动改名；`avatar_change` 表示账号头像变化。
+                     * @enum {string}
+                     */
+                    source: "full_sync" | "self_rename" | "avatar_change";
+                };
+                profile: {
+                    /** @description 账号当前头像 URL；确认没有可用头像时返回空字符串。 */
+                    avatar_url: string;
+                    /** @description WhatsApp BusinessName；渠道未返回时省略。 */
+                    business_name?: string;
+                    /** @description 按 BusinessName 优先、PushName 回退规则生成的展示名称。 */
+                    display_name: string;
+                    /** @description 消费时从 Provider 查询到的 WhatsApp 当前 PushName。 */
+                    push_name: string;
+                };
+            };
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "account.profile.updated";
+        };
         AccountSession: {
             account_id: string;
             auth_fields?: components["schemas"]["AuthField"][];
+            /** @description 当前授权步骤所需的渠道载荷。Passkey 流程可能返回 `type=passkey` 和 `public_key`，或返回 `type=passkey_confirmation` 及确认提示字段。 */
             auth_payload?: components["schemas"]["FreeFormObject"];
+            /** Format: date-time */
             expires_at?: string;
             last_error?: string;
-            /** @description 授权流程状态，例如 pending_auth、awaiting_qr_scan、authorized、failed。 */
+            /** @description 授权流程状态，例如 `pending_auth`、`awaiting_qr_scan`、`awaiting_code`、`pending`、`passkey_required`、 `passkey_pending`、`passkey_confirmation`、`passkey_confirmation_sent`、 `authorized`、`failed`。 */
             status: string;
+        };
+        AccountStartedWebhookEvent: {
+            /** @description device-api 签发的账号 public_id。 */
+            account_id: string;
+            data: {
+                event: {
+                    /** @enum {string} */
+                    kind: "account_started";
+                    /** @enum {string} */
+                    runtime_status: "running";
+                };
+                /** @enum {string} */
+                runtime_status: "running";
+            };
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "account.started";
+        };
+        /** @description PATCH 部分更新；字段省略时保留原值，显式 null 不合法，空数组或空对象表示清空对应集合。 实际改变 auth_mode 必须仅提交 auth_mode，不能混入其他字段或未知字段。 目标模式必须为该渠道支持的方式；相同模式保留原授权。Telegram、WhatsApp 实际切换会清除旧会话，包括已授权会话；成功后须重新授权。 `whatsapp-protocol` 凭证只能提交到 `/v1/accounts/{account_id}/auth/session` 的嵌套 `whatsapp-protocol` 对象，不能通过 provider_data 提交；不能在 whatsapp-protocol 与其他 provider 之间切换。 */
+        AccountUpdateRequest: {
+            /** @enum {string} */
+            auth_mode?: "qrcode" | "code" | "session";
+            capabilities?: string[];
+            metadata?: components["schemas"]["FreeFormObject"];
+            name?: string;
+            provider?: components["schemas"]["ProviderInputName"];
+            provider_account_ref?: string;
+            /** @description 渠道扩展配置；省略整个 `provider_data` 时保留原配置。 TikTok 的 `enable_comment` 仅接受 Boolean，未配置为 false；在线修改后需 reconnect 生效，关闭不撤回已排队事件。 Telegram 的 `provider_data.api_id` 和 `provider_data.api_hash` 均为可选； 更新自定义应用凭证时，请成对提供同一 Telegram 应用的两个字段，均使用字符串。 非空配置替换中的缺省凭证字段使用平台默认值；默认配置不可用时，该更新请求失败。 显式空对象表示清空，不补充默认凭证。 */
+            provider_data?: components["schemas"]["FreeFormObject"];
+            /** @description 自定义代理优先；清空后恢复账号创建时的默认配置。旧账号沿用原清空行为。 */
+            proxy?: components["schemas"]["FreeFormObject"];
+            region?: string;
+            runtime_status?: components["schemas"]["RuntimeStatus"];
+            status?: string;
+        };
+        /** @description 账号事件中的失败原因，不代表回调 HTTP 投递失败。account_auth_failed / 20100：授权失败，具体原因未确定；按现有授权失败流程处理，不推断具体原因。 account_logged_out / 20101：当前登录态已失效；引导重新授权。 account_restricted / 20102：当前账号登录受限，不代表已确认封禁；到官方 WhatsApp 客户端检查并处理，恢复正常后再重新授权。 */
+        AccountWebhookError: {
+            /**
+             * @description 稳定的机器可读失败分类。
+             * @enum {string}
+             */
+            code: "account_auth_failed" | "account_logged_out" | "account_restricted";
+            /** @description 平台维护的英文说明，可以调整文案，不用于客户端分支。 */
+            message: string;
+            /**
+             * @description 与 code 对应的五位数字字符串，不作为数值计算。
+             * @enum {string}
+             */
+            numeric_code: "20100" | "20101" | "20102";
+        };
+        ActiveCallData: {
+            call_id: string;
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @enum {string} */
+            media_type: "voice" | "video";
+            /** @enum {string} */
+            state: "preparing" | "dialing" | "ringing" | "connecting" | "active";
         };
         APIKey: {
             /** @example ak_xxx */
@@ -1014,7 +2225,7 @@ export interface components {
         };
         APIKeyCreateRequest: {
             name: string;
-            /** @description 生成 API Key 时使用的前缀。 */
+            /** @description 生成 API Key 时使用的前缀。省略时使用默认前缀；不接受 null。 */
             prefix?: string;
         };
         APIKeyCreateResult: {
@@ -1032,14 +2243,245 @@ export interface components {
             required: boolean;
             type: string;
         };
+        /** @description 仅内测工作区订阅匹配时投递，`*`、空数组或省略订阅均可匹配，具体事件列表须包含 call.answered；每次投递及重试重新核验资格，与 message.* 通话记录独立。呼入暂未开放。 */
+        CallAnsweredWebhookEvent: {
+            account_id: string;
+            data: {
+                call: components["schemas"]["CallEventCall"];
+                sender: components["schemas"]["CallEventSender"];
+            };
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "call.answered";
+        };
+        /** @description 仅内测工作区订阅匹配时投递，`*`、空数组或省略订阅均可匹配，具体事件列表须包含 call.ended；每次投递及重试重新核验资格，与 message.* 通话记录独立。呼入暂未开放。外呼在尚无对端标识时结束，省略 data.sender；来电结束仍必须提供 sender，提供时必须包含真实 id。 */
+        CallEndedWebhookEvent: {
+            account_id: string;
+            data: {
+                call: components["schemas"]["CallEventCall"];
+                duration_seconds: number;
+                /** @enum {string} */
+                reason: "declined" | "caller_cancelled" | "local_hangup" | "remote_hangup" | "answer_failed" | "provider_disconnected" | "media_failed" | "expired" | "remote_busy" | "no_answer" | "dial_failed";
+                sender?: components["schemas"]["CallEventSender"];
+            } & (({
+                call: {
+                    /** @enum {unknown} */
+                    direction: "inbound";
+                };
+            } & {
+                sender: components["schemas"]["CallEventSender"];
+            }) | ({
+                call: {
+                    /** @enum {unknown} */
+                    direction: "outbound";
+                };
+            } & unknown));
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "call.ended";
+        };
+        CallEventCall: {
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @description UnifyPort 本次通话 ID，同一通话生命周期内保持不变。 */
+            id: string;
+            /** @enum {string} */
+            media_type: "voice" | "video";
+            /** @enum {string} */
+            state: "ringing" | "active" | "ended";
+        };
+        CallEventSender: {
+            /** @description 可用时返回对端展示名称。 */
+            display_name?: string;
+            /** @description WhatsApp 对端标识；外呼事件中表示被呼叫方。 */
+            id: string;
+        };
+        /** @description 来电事件，携带短期浏览器接听链接；仅内测工作区订阅匹配时投递，`*`、空数组或省略订阅均可匹配，具体事件列表须包含 call.incoming。与 message.* 通话记录独立。呼入暂未开放，内测资格不会自动开启呼入；投递及重试时重新核验资格。 */
+        CallIncomingWebhookEvent: {
+            account_id: string;
+            data: {
+                call: components["schemas"]["CallEventCall"] & {
+                    /** @constant */
+                    direction?: "inbound";
+                    /** @constant */
+                    state?: "ringing";
+                };
+                /**
+                 * Format: uri
+                 * @description 短期、一次性的 HTTPS 浏览器接听链接。
+                 */
+                join_url: string;
+                sender: components["schemas"]["CallEventSender"];
+            };
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "call.incoming";
+        };
+        CallMessage: {
+            call: components["schemas"]["CallMessageCall"];
+            /**
+             * @description 相对于接入账号的发起方向；首期邀请为 inbound，接听和结束通知省略。
+             * @enum {string}
+             */
+            direction?: "inbound" | "outbound";
+            /** @description 通话消息记录 ID；邀请、接听和结束保持一致，仅用于记录关联，不代表支持原生消息操作。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 可确认的邀请发生时间；缺失时省略，接听和结束通知不提供此字段。
+             */
+            sent_at?: string;
+            /** @enum {string} */
+            type: "call";
+        };
+        CallMessageCall: {
+            /**
+             * Format: date-time
+             * @description 仅接听更新可有，可靠的接听确认时间；未知时省略，业务方在结束后仍应保留已有值。
+             */
+            accepted_at?: string;
+            /**
+             * @description 仅 ended 可有；timeout 表示超时，rejected_elsewhere 表示其他端拒接，不确认具体设备或执行方。未知时省略，不抹去已有接听事实，不能单独证明从未接听。
+             * @enum {string}
+             */
+            end_reason?: "timeout" | "rejected_elsewhere";
+            /**
+             * @description 仅明确确认对方结束时可有 remote，无法确认时省略；提供 end_reason 时不提供此字段。它不代表我方未接听，也不表示原消息的发起方向。
+             * @enum {string}
+             */
+            ended_by?: "remote";
+            /** @description 同一次通话保持一致的不透明通话 ID；按 provider 与 account_id 隔离。 */
+            id: string;
+            /**
+             * @description audio 为语音，video 为视频；未知时省略，省略不清空原记录。
+             * @enum {string}
+             */
+            media_type?: "audio" | "video";
+            /**
+             * @description offered 表示收到邀请，accepted 表示收到接听确认，ended 表示呼叫尝试或通话结束；均不承诺媒体连接已建立。
+             * @enum {string}
+             */
+            status: "offered" | "accepted" | "ended";
+        } & ({
+            end_reason?: never;
+        } | {
+            ended_by?: never;
+        });
+        CallMessageReceivedWebhookEvent: components["schemas"]["CallMessageWebhookEvent"] & {
+            data?: {
+                message?: {
+                    call?: {
+                        /** @enum {unknown} */
+                        status?: "offered";
+                    } & {
+                        accepted_at?: never;
+                        end_reason?: never;
+                        ended_by?: never;
+                    };
+                    /** @enum {unknown} */
+                    direction: "inbound";
+                };
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        };
+        CallMessageUpdatedWebhookEvent: components["schemas"]["CallMessageWebhookEvent"] & {
+            data?: {
+                message?: {
+                    call?: ({
+                        /** @enum {unknown} */
+                        status?: "accepted";
+                    } & {
+                        end_reason?: never;
+                        ended_by?: never;
+                    }) | ({
+                        /** @enum {unknown} */
+                        status?: "ended";
+                    } & {
+                        accepted_at?: never;
+                    });
+                } & {
+                    direction?: never;
+                    sent_at?: never;
+                };
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        };
+        CallMessageWebhookEvent: {
+            /** @description Device API 签发的账号 public_id。 */
+            account_id: string;
+            data: {
+                account?: {
+                    /** @description 渠道侧接入账号引用，无法提供时省略。 */
+                    provider_account_ref?: string;
+                };
+                conversation?: {
+                    /** @description 对端 WhatsApp LID；无法确认会话时整个对象省略。 */
+                    id: string;
+                    /** @enum {string} */
+                    type: "user";
+                };
+                event?: {
+                    /**
+                     * @description 既有消息事件辅助信息；通话识别和状态以 message.type 与 message.call 为准。
+                     * @enum {string}
+                     */
+                    kind?: "message_received" | "message_updated";
+                };
+                message: components["schemas"]["CallMessage"];
+                sender?: {
+                    /** @description 原始通话发起者的 WhatsApp LID；邀请、接听和结束均可提供，不表示接听或结束通知的执行者。 */
+                    id: string;
+                    /** @enum {string} */
+                    type?: "user";
+                };
+            };
+            /** @description 事件幂等键；同一阶段重复投递保持一致，邀请、接听与结束使用不同事件 ID。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 本次邀请、接听或结束的发生时间；无法确认时使用接收时间，重试保持不变，但接收时间不会用于填充 accepted_at。
+             */
+            occurred_at: string;
+            /**
+             * @description 首期仅支持 WhatsApp 单聊通话消息。
+             * @enum {string}
+             */
+            provider: "whatsapp";
+            /** @enum {string} */
+            type: "message.received" | "message.updated";
+        };
         Contact: {
             avatar_url: string;
+            /** @description 用于发送消息或定位会话的标识，请按不透明字符串保存和使用。 */
             conversation_id: string;
             display_name: string;
-            extra?: components["schemas"]["FreeFormObject"];
+            extra?: components["schemas"]["ContactExtra"];
+            /** @description 联系人标识。 */
             id: string;
             is_blocked?: boolean;
+            /** @description 渠道用户标识，请按不透明字符串保存和使用。 */
             provider_user_id: string;
+        };
+        /** @description 本次提供的通讯录保存名；仅更新出现的字段，空字符串表示明确清空，缺省表示保持原值，null 非法。不要覆盖对方昵称。 */
+        ContactAddressBook: {
+            /** @description 通讯录保存名字；允许空字符串表示清空。 */
+            first_name?: string;
+            /** @description 通讯录保存全名；允许空字符串表示清空。 */
+            full_name?: string;
         };
         ContactBlocklistResult: {
             blocklist: string[];
@@ -1052,18 +2494,83 @@ export interface components {
             phones?: components["schemas"]["ContactPhone"][];
             title?: string;
         };
+        ContactCreateRequest: {
+            /**
+             * @description 包含国家或地区代码的纯数字电话号码，不包含加号、空格或分隔符。
+             * @example 8613800000000
+             */
+            phone_number?: string;
+            /**
+             * @description 渠道用户名，格式要求以目标渠道为准。
+             * @example alice
+             */
+            username?: string;
+            whatsapp_options?: components["schemas"]["WhatsAppContactCreateOptions"];
+        } & ({
+            /**
+             * @description 包含国家或地区代码的纯数字电话号码，不包含加号、空格或分隔符。
+             * @example 8613800000000
+             */
+            phone_number: string;
+        } | {
+            /**
+             * @description 渠道用户名，格式要求以目标渠道为准。
+             * @example alice
+             */
+            username: string;
+        });
         ContactEmail: {
             /** Format: email */
             address: string;
             type?: string;
         };
+        /** @description 渠道联系人扩展资料；字段仅在 Provider 返回可靠值时出现。 */
+        ContactExtra: {
+            /** @description WhatsApp Business 账号的商业或认证名称。 */
+            business_name?: string;
+            /** @description 当前账号通讯录中保存的联系人简称或名字部分。 */
+            first_name?: string;
+            /** @description 当前账号通讯录中保存的完整联系人名称。 */
+            full_name?: string;
+            /** @description WhatsApp phone JID 中解析出的纯手机号。 */
+            phone?: string;
+            /** @description 联系人自行在 WhatsApp 设置的个人名称。 */
+            push_name?: string;
+            /** @description Provider 仅返回部分号码时的遮蔽手机号。 */
+            redacted_phone?: string;
+            /**
+             * @description WhatsApp 联系人的用户名（provider=whatsapp），与个人名称 push_name 独立。列表和详情仅在已获取到非空用户名时返回；缺失表示当前未知，不代表对方未设置，也不应据此清空已保存的用户名。
+             * @example alice_handle
+             */
+            username?: string;
+        } & {
+            [key: string]: unknown;
+        };
         ContactIdRequest: {
+            /**
+             * @description 渠道侧联系人标识。WhatsApp 封锁和解封操作必须传 LID，格式为 `数字@lid`。
+             * @example 123456789012345@lid
+             */
             contact_id: string;
         };
         ContactListResult: {
             has_more: boolean;
             items: components["schemas"]["Contact"][];
             next_cursor?: string;
+        };
+        ContactMembership: {
+            /** @description 查询请求中的联系人标识。 */
+            contact_id: string;
+            /** @description 是否存在于目标账号的渠道联系人列表中。 */
+            is_in_contacts: boolean;
+        };
+        ContactMessagePayload: {
+            contacts: components["schemas"]["ContactCard"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "contact";
         };
         ContactNoteRequest: {
             contact_id: string;
@@ -1074,13 +2581,66 @@ export interface components {
             number: string;
             type?: string;
         };
+        ContactUpdateChange: {
+            /**
+             * Format: date-time
+             * @description 可靠的名称变更时间，以 RFC3339 UTC 表示并保留精度；未知时省略，不用 occurred_at 补齐。
+             */
+            changed_at?: string;
+            /** @description 与本次 address_book 中出现的字段精确对应，顺序无含义；表示提供的更新字段，不证明服务端已比较旧值。 */
+            changed_fields: ("address_book.full_name" | "address_book.first_name")[];
+            /** @enum {string} */
+            kind: "contact_updated";
+            /**
+             * @description address_book 表示通讯录更新；full_sync 表示收到的同步快照，不表示刚刚手动改名，也不保证完整通讯录或同步完成通知。
+             * @enum {string}
+             */
+            source: "address_book" | "full_sync";
+        };
+        ContactUpdatedData: {
+            account?: components["schemas"]["ConversationStateAccount"];
+            contact: components["schemas"]["ContactUpdateReference"];
+            event: components["schemas"]["ContactUpdateChange"];
+        } & (unknown & unknown);
+        ContactUpdatedWebhookEvent: {
+            account_id: string;
+            data: components["schemas"]["ContactUpdatedData"];
+            /** @description 事件幂等键；同值更新也可能来自不同事件，不保证跨来源仅通知一次。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 事件发生时间，未知时可为接收时间；不保证为可靠名称变更时间，不能代替 changed_at 排序。
+             */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "contact.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        ContactUpdateReference: {
+            address_book: components["schemas"]["ContactAddressBook"];
+            /** @description 已可靠关联的会话 ID，未知时省略。WhatsApp 的详情查询使用此处已确认的 LID；不能从 contact.id 推算。 */
+            conversation_id?: string;
+            /** @description 对应渠道及账号范围内的联系人不透明资源 ID，可关联联系人列表中同 ID 的资源；不保证可直接用于会话或详情查询。WhatsApp 详情可能返回映射后的不同 PN 资源 ID，不能据此自动替换事件资源键或合并不同 PN/LID 记录。 */
+            id: string;
+        };
         Conversation: {
             avatar_url: string;
             conversation_id: string;
             /** Format: date-time */
             created_at?: string;
             description?: string;
-            extra?: components["schemas"]["FreeFormObject"];
+            /** @description 渠道扩展字段；WhatsApp 群会话可包含公告群分类，会话列表不保证提供该分类。 */
+            extra?: {
+                /**
+                 * @description 仅 WhatsApp 群会话提供。true 表示已确认是社群公告群，false 表示本次资料已确认不符合公告群条件；缺失表示未知，不返回 null。分类不表示当前账号具备发送权限。
+                 * @example false
+                 */
+                is_announcement_group?: boolean;
+            } & {
+                [key: string]: unknown;
+            };
             is_muted: boolean;
             is_pinned: boolean;
             /** Format: date-time */
@@ -1095,6 +2655,146 @@ export interface components {
             /** Format: int64 */
             unread_count: number;
             username?: string;
+        };
+        ConversationDisappearingMessagesChange: {
+            /** @enum {string} */
+            change_type: "disappearing_messages";
+            /**
+             * Format: date-time
+             * @description 已知的可靠设置变更时间，以 RFC3339 UTC 表示并保留精度；未知时省略，不用 occurred_at 补齐。
+             */
+            changed_at?: string;
+            /** @enum {string} */
+            kind: "conversation_updated";
+        };
+        /** @description 本次完整限时消息设置快照；整体替换旧设置，缺失对象不表示关闭，不改变会话其他字段。 */
+        ConversationDisappearingMessagesState: {
+            /** @description 开启时为正秒数，关闭时明确为 0；不表示每条消息的剩余时间。 */
+            duration_seconds: number;
+            /** @description true 表示开启，false 表示关闭；不能由缺失值推测关闭。 */
+            enabled: boolean;
+        } & (({
+            /** @enum {unknown} */
+            enabled: false;
+        } & ({
+            /** @constant */
+            duration_seconds?: 0;
+        } & {
+            [key: string]: unknown;
+        })) | ({
+            /** @enum {unknown} */
+            enabled: true;
+        } & ({
+            duration_seconds?: unknown;
+        } & {
+            [key: string]: unknown;
+        })));
+        ConversationDisappearingMessagesUpdatedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: components["schemas"]["ConversationStateAccount"];
+                /** @description 执行本次设置变更的人，未知时省略；不生成消息作者或方向。 */
+                actor?: components["schemas"]["ConversationStateActor"];
+                conversation: components["schemas"]["ConversationStateReference"];
+                disappearing_messages: components["schemas"]["ConversationDisappearingMessagesState"];
+                event: components["schemas"]["ConversationDisappearingMessagesChange"];
+            };
+            /** @description 事件幂等键；不同事件可能提供同值设置快照，不保证跨来源只通知一次。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 事件发生时间，未知时可为接收时间；不保证是可靠设置变更时间，不能代替 changed_at 判断新旧。
+             */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "conversation.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        ConversationHistoryAccepted: {
+            /** @description 本次请求的标准会话 ID。 */
+            conversation_id: string;
+            /** @description 本次实际请求的数量上限。 */
+            limit: number;
+            /**
+             * @description 仅确认请求已受理，不表示收到历史或完成补拉。
+             * @enum {string}
+             */
+            status: "accepted";
+        };
+        /** @description 同一会话中同一条原生内容消息的位置；所有字段必须来自该消息，不接受 null。type=call 的合成通话记录即使三个字段完整也不能作为锚点；请求不包含 type 字段。 */
+        ConversationHistoryBefore: {
+            /**
+             * @description 该消息相对于当前账号的收发方向；inbound 为接收，outbound 为发送。
+             * @enum {string}
+             */
+            direction: "inbound" | "outbound";
+            /** @description 原生内容消息的 id；不接受合成通话记录 ID，去除首尾空白后仍为该记录格式时同样无效。不能使用顶层事件 id 或 HTTP request_id 代替。 */
+            message_id: string;
+            /**
+             * Format: date-time
+             * @description 该消息的 RFC3339 发送时间，Unix 秒值必须大于 0；不能使用事件 occurred_at 或当前时间代替。
+             */
+            sent_at: string;
+        };
+        /** @description 标准历史消息，沿用现有正文、附件和可选归因字段；仅具有原生消息 ID 且 id、sent_at、direction 完整的内容消息可用于继续补拉，合成通话记录不可用。 */
+        ConversationHistoryMessage: {
+            /** @enum {string} */
+            direction?: "inbound" | "outbound";
+            id?: string;
+            referral?: components["schemas"]["MessageReferral"];
+            /** Format: date-time */
+            sent_at?: string;
+            text?: string;
+            type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ConversationHistoryRequest: {
+            before: components["schemas"]["ConversationHistoryBefore"];
+            /** @description WhatsApp 标准私聊 LID；必须属于 before 指向的会话，不接受手机号或其他会话类型。 */
+            conversation_id: string;
+            /**
+             * @description 请求数量，不保证实际返回相同数量；仅省略时默认 50，显式 null、0、非整数或超过 50 均返回 invalid_request。
+             * @default 50
+             */
+            limit?: number;
+        };
+        ConversationHistorySource: {
+            /**
+             * @description 本次批次来自按需补拉；不标识具体请求或补拉完成状态。
+             * @enum {string}
+             */
+            source: "on_demand";
+        };
+        /** @description 同一会话的一批历史可通过多个 conversation.history 事件提供；按 provider、account_id、data.conversation.id 和消息 id 合并全部事件，不以事件个数或单个事件内的消息数量判断完整历史已恢复。每条消息保持完整，不截短字段；按需事件均保留 data.history.source=on_demand，不产生 account.history.synced。 */
+        ConversationHistoryWebhookEvent: {
+            account_id: string;
+            data: {
+                conversation: {
+                    id: string;
+                    type: components["schemas"]["ConversationType"];
+                };
+                /** @description 仅按需补拉批次提供；自动历史同步继续沿用原有结构。 */
+                history?: components["schemas"]["ConversationHistorySource"];
+                /** @description 当前事件提供的可用历史消息，可为空数组；同一会话可能还有其他历史事件。空数组或数量不足不代表全部历史已完成。 */
+                messages: components["schemas"]["ConversationHistoryMessage"][];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 事件去重标识，不是补拉请求 ID。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 事件时间，不能替代每条消息的 sent_at。
+             */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "conversation.history";
+        } & {
+            [key: string]: unknown;
         };
         ConversationIdRequest: {
             conversation_id: string;
@@ -1144,9 +2844,13 @@ export interface components {
             extra?: components["schemas"]["FreeFormObject"];
             /** Format: date-time */
             joined_at?: string;
-            /** @description 成员的 provider 侧稳定标识。WhatsApp 优先返回 LID，缺少 LID 映射时回退 JID；纯手机号位于 `extra.phone`。 */
+            /** @description 成员的渠道侧稳定标识，请按不透明字符串保存和使用。 */
             peer_id: string;
-            role?: string;
+            /**
+             * @description 标准化成员角色。群主或创建者为 `superadmin`，管理员为 `admin`，普通成员以及暂时无法识别权限的成员为 `member`。
+             * @enum {string}
+             */
+            role?: "member" | "admin" | "superadmin";
             username?: string;
         };
         ConversationMemberListResult: {
@@ -1167,21 +2871,82 @@ export interface components {
             mute_until?: string;
         };
         ConversationReadRequest: components["schemas"]["ConversationIdRequest"] & {
-            /** @description 可选。WhatsApp 中与 up_to_message_sender_id 一起发送目标消息的 read receipt；省略两者时标记整个会话已读。 */
+            /** @description 按账号所属渠道校验，字段类型始终为字符串。 Telegram 必填：当前账号在该会话收到的单个消息 ID，例如 message.received 的 data.message.id，且 data.message.direction=inbound。 去除首尾空白后必须只含 ASCII 十进制数字，数值范围为 1–2147483647； 截止该消息（含自身及此前消息）标记已读。不能使用逗号列表、正负号、小数、指数、内部空白或非 ASCII 数字，不能省略或使用 0 表示整个会话。 WhatsApp 可选：一个消息 ID，或属于同一发送者的多个消息 ID（英文逗号分隔）； 与 up_to_message_sender_id 成对提供非空值。省略两者时标记整个会话已读；两者去除首尾空白后均为空时同样标记整个会话。 */
             up_to_message_id?: string;
-            /** @description up_to_message_id 对应消息的 provider 原始发送者 ID；群聊应传 webhook data.sender.id。与 up_to_message_id 成对必填。 */
+            /** @description WhatsApp 消息级已读的渠道侧发送者标识，与非空 up_to_message_id 成对提供；群聊应传 Webhook 事件中的 data.sender.id。多个消息 ID 必须属于同一发送者。Telegram 不支持此参数，提供非空值时返回 invalid_request。 */
             up_to_message_sender_id?: string;
         };
-        /** @enum {string} */
+        ConversationStateAccount: {
+            /** @description 已确认的渠道账号标识，可用于关联账号；未提供时不推测。 */
+            provider_account_ref: string;
+        };
+        ConversationStateActor: {
+            /** @description 对应渠道及账号范围内的不透明操作者 ID。 */
+            id: string;
+            /** @description 已知的非空显示名称，可省略；不用于事件身份或排序。 */
+            name?: string;
+            /** @enum {string} */
+            type?: "user";
+        };
+        ConversationStateReference: {
+            /** @description 对应渠道及账号范围内的不透明会话 ID。 */
+            id: string;
+            type: components["schemas"]["ConversationType"];
+        };
+        /**
+         * @description 标准会话类型；WhatsApp 社群公告群继续使用 group。
+         * @enum {string}
+         */
         ConversationType: "user" | "group" | "channel";
+        CreateCallData: {
+            call_id: string;
+            /** @enum {string} */
+            direction: "outbound";
+            /**
+             * Format: date-time
+             * @description RFC3339 格式的准备失效时间；从创建通话起默认 2 分钟，可由服务端调整，请以此字段判断截止时间，不要自行写死时长。
+             */
+            expires_at: string;
+            /**
+             * Format: uri
+             * @description 原样传递的短期一次性 HTTPS 通话链接，禁止记录完整链接。
+             */
+            join_url: string;
+            /** @enum {string} */
+            media_type: "voice" | "video";
+            /** @enum {string} */
+            state: "preparing";
+        };
+        CreateCallRequest: {
+            /** @description 当前工作空间内账号的公开 ID。 */
+            account_id: string;
+            /** @enum {string} */
+            media_type: "voice" | "video";
+            /** @description 与发送消息共用目标结构，id 使用 conversation_id。首期仅支持 WhatsApp user 的数字 @lid 或 @s.whatsapp.net 单聊 JID（最长 128 字符），不接受手机号字符串；group、channel 暂不支持。 */
+            to: components["schemas"]["Recipient"];
+        };
+        EndedCallData: {
+            call_id: string;
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            /** @enum {string} */
+            media_type: "voice" | "video";
+            /** @enum {string} */
+            state: "ended" | "failed";
+        };
         Error: {
             /**
              * @description 稳定的机器可读错误码。
              * @example invalid_request
              */
             code: string;
-            /** @description 面向开发者的错误说明，不建议作为客户端分支依据。 */
+            /** @description 面向开发者的错误说明，不建议作为客户端分支依据。 numeric_code=30010 时，有原始原因则为 Provider operation failed: <原始错误原因>，没有则为 Provider operation failed。 numeric_code=30021 时保留原始连接错误，原因缺失时为 Account is not connected to the messaging platform。 numeric_code=34012 时为 Group administrator privileges are required to send messages to this group，表示当前账号的群消息发送被明确拒绝为需要管理员权限，不反推群类型、具体群设置或账号角色。 numeric_code=35009 时保留完整原始原因，不增加前缀；原因缺失时为 Target phone number was not recognized as an active WhatsApp contact。 numeric_code=36007 时提供具体贴纸素材校验原因，原因缺失时为 Invalid sticker media。 贴纸素材准备失败及实际发送失败保留既有错误分类和专属提示，并提供可用的具体失败原因；原因缺失时沿用默认提示。 这些细分原因保留所在接口既有的 HTTP 状态和 code；调用方应按 numeric_code 判断，不依赖可变化的文案。 */
             message: string;
+            /**
+             * @description Device API 分配的五位数字字符串错误码；Provider 细分原因可以在不改变 HTTP 和 code 的前提下覆盖默认值。whatsapp 发送时的账号受限使用 20102，与该渠道账号受限回调的数字码一致；whatsapp-protocol 同步账号受限仍使用 30020。仅 whatsapp 群消息发送明确需要管理员权限时使用 34012，保持 HTTP 502 和 code=provider_unavailable。仅 whatsapp 添加联系人明确未将目标号码识别为有效联系人时使用 35009，保持 HTTP 500 和 code=create_contact_failed，不确认号码未注册或永久不可用。
+             * @example 10000
+             */
+            numeric_code: string;
         };
         ErrorEnvelope: components["schemas"]["ResponseMeta"] & {
             error: components["schemas"]["Error"];
@@ -1195,13 +2960,28 @@ export interface components {
             /** Format: date-time */
             created_at?: string;
             description?: string;
-            extra?: components["schemas"]["FreeFormObject"];
+            /** @description 渠道扩展字段；WhatsApp 群资料可包含公告群分类，是否返回取决于本次查询可用资料。 */
+            extra?: {
+                /**
+                 * @description 仅 WhatsApp 群提供。true 表示已确认是社群公告群，false 表示本次资料已确认不符合公告群条件；缺失表示未知，不返回 null。此属性独立于 permissions.admins_only，不表示当前账号具备发送权限。
+                 * @example false
+                 */
+                is_announcement_group?: boolean;
+            } & {
+                [key: string]: unknown;
+            };
             id: string;
             /** Format: date-time */
             joined_at?: string;
             /** Format: int64 */
             member_count?: number;
             name: string;
+            permissions?: components["schemas"]["GroupPermissions"];
+        };
+        GroupAnnouncementChange: {
+            admins_only: boolean;
+            /** @enum {string} */
+            kind: "announcement_changed";
         };
         GroupCreateRequest: {
             members?: string[];
@@ -1224,6 +3004,11 @@ export interface components {
         GroupInviteCode: {
             invite_code: string;
             invite_url: string;
+        };
+        /** @description 邀请链接缓存失效信号；不携带链接或邀请码，应调用现有群邀请链接查询获取当前值。 */
+        GroupInviteLinkChange: {
+            /** @enum {string} */
+            kind: "invite_link_changed";
         };
         GroupJoinApprovalModeRequest: {
             enabled: boolean;
@@ -1257,36 +3042,889 @@ export interface components {
             group_id: string;
             member_id: string;
         };
-        Mention: {
-            id: string;
+        /** @description 群整体发言权限快照，仅来源明确提供时返回。缺失表示未知；false 表示普通成员可发言，不表示当前账号一定可发送。 */
+        GroupPermissions: {
+            /** @description true 表示仅管理员发言；false 是明确状态，不能视为缺省。 */
+            admins_only?: boolean;
         };
+        GroupSettingsEvent: {
+            /**
+             * Format: date-time
+             * @description 可靠业务时间，UTC RFC3339 并保留精度；未知省略，不以 occurred_at 或到达顺序代替。
+             */
+            changed_at?: string;
+            /** @enum {string} */
+            kind: "group_updated";
+        };
+        GroupSettingsUpdatedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: components["schemas"]["ConversationStateAccount"];
+                actor?: components["schemas"]["ConversationStateActor"];
+                changes: components["schemas"]["GroupUpdatedChange"][];
+                conversation: components["schemas"]["ConversationStateReference"];
+                event: components["schemas"]["GroupSettingsEvent"];
+            };
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "group.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        GroupUpdatedChange: components["schemas"]["GroupAnnouncementChange"] | components["schemas"]["GroupInviteLinkChange"] | ({
+            kind: string;
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 链接预览发送结构；不能与媒体、名片或其他消息载荷字段混用。渠道支持范围和附加限制见发送接口说明。 */
+        LinkPreviewMessagePayload: {
+            link_preview: components["schemas"]["SendMessageLinkPreview"];
+            /** @description 消息正文；WhatsApp 要求其中包含 link_preview.url 的原文。 */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "link_preview";
+        };
+        MediaMessagePayload: {
+            caption?: string;
+            file_key?: string;
+            /** Format: uri */
+            file_url?: string;
+            /** @enum {string} */
+            type: "image" | "video" | "audio" | "document" | "file";
+            /** Format: uri */
+            url?: string;
+        } & ({
+            url: unknown;
+        } | {
+            file_url: unknown;
+        } | {
+            file_key: unknown;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "image" | "video" | "audio" | "document" | "file";
+        };
+        Mention: {
+            /** @description `type=member` 时必填的 Provider 成员标识。 */
+            id?: string;
+            /**
+             * @default member
+             * @enum {string}
+             */
+            type?: "member" | "all";
+        } & ({
+            /** @description `type=member` 时必填的 Provider 成员标识。 */
+            id: string;
+            /** @enum {unknown} */
+            type?: "member";
+        } | ({
+            /** @constant */
+            type: "all";
+        } & {
+            id?: never;
+        }));
+        MessageCommerce: components["schemas"]["MessageWithOptionalReferral"] & (({
+            order?: components["schemas"]["MessageOrder"];
+            product?: components["schemas"]["MessageProduct"];
+            /** @enum {string} */
+            type: "product" | "order";
+        } & {
+            [key: string]: unknown;
+        }) & ({
+            order?: never;
+            product: components["schemas"]["MessageProduct"];
+            /** @constant */
+            type?: "product";
+        } | {
+            order: components["schemas"]["MessageOrder"];
+            product?: never;
+            /** @constant */
+            type?: "order";
+        }));
+        MessageCommerceHistoryWebhookEvent: components["schemas"]["MessageCommerceWebhookEvent"] & ({
+            data?: {
+                messages: unknown[];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        /**
+         * Format: uri
+         * @description 带主机名的绝对 HTTP(S) URI，保留查询参数；格式有效不保证资源可访问或永久有效。
+         */
+        MessageCommerceHTTPURL: string;
+        /** @description 金额与币种按各自是否提供分别输出；缺失不补零或默认币种，两者均未知时省略整个对象。 */
+        MessageCommerceMoney: {
+            /** @description 币种主单位的非负精确十进制字符串；保留零值，不使用指数、正负号或空白，不限制为固定小数位。 */
+            amount?: string;
+            /** @description 原始币种标识，按非空不透明字符串保存；不默认 USD，也不强制三字符编码。 */
+            currency?: string;
+        };
+        MessageCommerceReceivedWebhookEvent: components["schemas"]["MessageCommerceWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageCommerce"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageCommerceUpdatedWebhookEvent: components["schemas"]["MessageCommerceWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageCommerce"] & ({
+                    id: string;
+                } & {
+                    [key: string]: unknown;
+                });
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageCommerceWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message?: components["schemas"]["MessageWithOptionalCommerce"];
+                messages?: components["schemas"]["MessageWithOptionalCommerce"][];
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        });
+        MessageContactCards: ({
+            contacts: components["schemas"]["ReceivedContactCard"][];
+            id?: string;
+            /** @enum {string} */
+            type?: "contact";
+        } & {
+            [key: string]: unknown;
+        }) & ({
+            contacts?: unknown;
+            text: string;
+        } | {
+            id: string;
+            reply_token?: never;
+            text?: never;
+            /** @enum {string} */
+            type: "contact";
+        });
+        MessageContactCardsHistoryWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                messages: components["schemas"]["MessageWithOptionalContactCards"][];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageContactCardsReceivedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageContactCards"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageContactCardsUpdatedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageContactCards"] & {
+                    id: string;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
         MessageEditRequest: {
             account_id: string;
             content: string;
             conversation_id: string;
             message_id: string;
         };
-        MessagePayload: {
-            caption?: string;
-            contacts?: components["schemas"]["ContactCard"][];
-            file_key?: string;
-            /** Format: uri */
-            file_url?: string;
+        MessageInteractive: {
+            body?: string;
+            buttons?: components["schemas"]["MessageInteractiveButton"][];
+            footer?: string;
+            header?: components["schemas"]["MessageInteractiveHeader"];
+            /** @enum {string} */
+            kind: "buttons" | "template";
+        } & ({
+            header: components["schemas"]["MessageInteractiveHeader"];
+        } | {
+            body: string;
+        } | {
+            footer: string;
+        } | {
+            buttons: components["schemas"]["MessageInteractiveButton"][];
+        });
+        /** @description 复用消息附件字段；URL 可缺失，已知媒体类型仍可保留。size 为字节，duration_ms 为毫秒；仅输出已知有效字段。 */
+        MessageInteractiveAttachment: {
+            description?: string;
+            duration_ms?: number;
+            /** @description WhatsApp 自动历史同步与按需补拉使用相同的历史保留与媒体获取规则：默认每批每会话最多保留最近 100 条消息，并尝试获取已保留的最近 100 条消息内的受支持交互头部媒体，文本消息也计数。历史保留数量和媒体获取范围可由服务配置独立调整；不设历史条数上限时只处理实际收到的批次，不主动补齐全部历史；不设额外媒体窗口时，对本批已保留消息中的所有受支持交互头部媒体尝试获取。不保证收到 100 条消息或全部媒体可恢复。获取成功且提供有效 URL 时为 false；获取失败或超出所配置的媒体窗口时为 true。未尝试且状态未知时可省略。媒体恢复后应同时合并本次 url 和 expired=false，覆盖旧 true；缺失字段不清空旧状态，该状态不保证 URL 永久可下载。 */
+            expired?: boolean;
+            id?: string;
+            metadata?: components["schemas"]["MessageInteractiveAttachmentMetadata"];
+            mimetype?: string;
+            size?: number;
+            thumbnail_url?: components["schemas"]["MessageCommerceHTTPURL"];
+            title?: string;
+            /** @enum {string} */
+            type: "image" | "video" | "document";
+            url?: components["schemas"]["MessageCommerceHTTPURL"];
+        };
+        MessageInteractiveAttachmentMetadata: {
+            file_length?: number;
+            height?: number;
+            is_big_file?: boolean;
+            size?: number;
+            width?: number;
+        };
+        MessageInteractiveButton: {
+            /** @description 可选回复按钮标识；不得用显示文字或位置代替。 */
+            id?: string;
+            /** @description 已确认并归一化的 0 基位置；0 必须保留。WhatsApp 当前不提供，不可依赖。 */
+            index?: number;
+            phone_number?: string;
+            title?: string;
+            /** @enum {string} */
+            type: "reply" | "url" | "phone";
+            url?: components["schemas"]["MessageCommerceHTTPURL"];
+        } & (({
+            phone_number?: never;
+            /** @constant */
+            type?: "reply";
+            url?: never;
+        } & (unknown | unknown)) | ({
+            id?: never;
+            phone_number?: never;
+            /** @constant */
+            type?: "url";
+        } & (unknown | unknown)) | ({
+            id?: never;
+            /** @constant */
+            type?: "phone";
+            url?: never;
+        } & (unknown | unknown)));
+        MessageInteractiveHeader: {
+            attachment?: components["schemas"]["MessageInteractiveAttachment"];
             text?: string;
             /** @enum {string} */
-            type: "text" | "image" | "video" | "audio" | "document" | "file" | "contact";
-            /** Format: uri */
-            url?: string;
+            type: "text" | "image" | "video" | "document";
+        } & ({
+            attachment?: never;
+            text: string;
+            /** @constant */
+            type: "text";
+        } | {
+            attachment: {
+                /** @constant */
+                type?: "image";
+            };
+            text?: never;
+            /** @constant */
+            type: "image";
+        } | {
+            attachment: {
+                /** @constant */
+                type?: "video";
+            };
+            text?: never;
+            /** @constant */
+            type: "video";
+        } | {
+            attachment: {
+                /** @constant */
+                type?: "document";
+            };
+            text?: never;
+            /** @constant */
+            type: "document";
+        });
+        MessageInteractiveHistoryWebhookEvent: components["schemas"]["MessageInteractiveWebhookEvent"] & ({
+            data?: {
+                messages: unknown[];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageInteractiveMessage: components["schemas"]["MessageWithOptionalReferral"] & (({
+            interactive?: components["schemas"]["MessageInteractive"];
+            interactive_response?: components["schemas"]["MessageInteractiveResponse"];
+            order?: never;
+            product?: never;
+            /** @enum {string} */
+            type: "interactive" | "interactive_response";
+        } & {
+            [key: string]: unknown;
+        }) & ({
+            interactive: components["schemas"]["MessageInteractive"];
+            interactive_response?: never;
+            /** @constant */
+            type?: "interactive";
+        } | {
+            interactive?: never;
+            interactive_response: components["schemas"]["MessageInteractiveResponse"];
+            /** @constant */
+            type?: "interactive_response";
+        }));
+        MessageInteractiveReceivedWebhookEvent: components["schemas"]["MessageInteractiveWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageInteractiveMessage"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageInteractiveResponse: {
+            /** @enum {string} */
+            kind: "button" | "template_button";
+            /** @description 已知选项标识；未提供时不能由显示文字生成。 */
+            selected_id?: string;
+            /** @description 已确认并归一化的 0 基位置；0 必须保留。WhatsApp 当前不提供，不可依赖。 */
+            selected_index?: number;
+            title?: string;
+        } & ({
+            /** @description 已知选项标识；未提供时不能由显示文字生成。 */
+            selected_id: string;
+        } | {
+            /** @description 已确认并归一化的 0 基位置；0 必须保留。WhatsApp 当前不提供，不可依赖。 */
+            selected_index: number;
+        } | {
+            title: string;
+        });
+        MessageInteractiveUpdatedWebhookEvent: components["schemas"]["MessageInteractiveWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageInteractiveMessage"] & ({
+                    id: string;
+                } & {
+                    [key: string]: unknown;
+                });
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageInteractiveWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message?: components["schemas"]["MessageWithOptionalInteractive"];
+                messages?: components["schemas"]["MessageWithOptionalInteractive"][];
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 当前消息的链接预览；目标链接必需。title/description 仅在明确提供时出现，空字符串表示清空，缺省表示不改，null 和全空白字符串非法；其他可选字段缺省不表示清空。普通正文 URL 不自动成为本对象。 */
+        MessageLinkPreview: {
+            description?: string | "" | unknown;
+            /** @description 可选预览图片地址，不保证永久可用；WhatsApp 当前不提供接收侧图片地址，不应依赖该字段。 */
+            image_url?: components["schemas"]["MessageLinkPreviewHTTPURL"];
+            title?: string | "" | unknown;
+            url: components["schemas"]["MessageLinkPreviewHTTPURL"];
+        };
+        MessageLinkPreviewHistoryWebhookEvent: components["schemas"]["MessageLinkPreviewWebhookEvent"] & ({
+            data?: {
+                messages: unknown[];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 带主机名且不含空白的绝对 HTTP(S) URI，方括号地址仅接受 IPv6 字面量；保留原文，不保证资源可访问。 */
+        MessageLinkPreviewHTTPURL: components["schemas"]["MessageCommerceHTTPURL"];
+        MessageLinkPreviewMessage: components["schemas"]["MessageWithOptionalReferral"] & ({
+            interactive?: never;
+            interactive_response?: never;
+            link_preview: components["schemas"]["MessageLinkPreview"];
+            order?: never;
+            product?: never;
+            text?: string;
+            /** @enum {string} */
+            type: "link_preview";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageLinkPreviewReceivedWebhookEvent: components["schemas"]["MessageLinkPreviewWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageLinkPreviewMessage"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 编辑后明确成为普通文本；业务方清除旧 link_preview 后合并实际提供的字段，缺省正文不捏造为空字符串。 */
+        MessageLinkPreviewTextUpdate: {
+            id: string;
+            interactive?: never;
+            interactive_response?: never;
+            link_preview?: never;
+            order?: never;
+            product?: never;
+            text?: string;
+            /** @enum {string} */
+            type: "text";
+        } & {
+            [key: string]: unknown;
+        };
+        MessageLinkPreviewUpdatedWebhookEvent: components["schemas"]["MessageLinkPreviewWebhookEvent"] & ({
+            data?: {
+                message: (components["schemas"]["MessageLinkPreviewMessage"] | components["schemas"]["MessageLinkPreviewTextUpdate"]) & ({
+                    id: string;
+                } & {
+                    [key: string]: unknown;
+                });
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageLinkPreviewWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message?: components["schemas"]["MessageWithOptionalLinkPreview"];
+                messages?: components["schemas"]["MessageWithOptionalLinkPreview"][];
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 仅识别实时位置类型，调用方可提示在 WhatsApp 中查看；不提供坐标、追踪、共享时长、终止状态或回复句柄，不开放此类型发送。 */
+        MessageLiveLocation: {
+            duration_seconds?: never;
+            ended_at?: never;
+            id: string;
+            latitude?: never;
+            location?: never;
+            longitude?: never;
+            reply_token?: never;
+            text?: never;
+            /** @enum {string} */
+            type: "live_location";
+        } & {
+            [key: string]: unknown;
+        };
+        MessageLiveLocationHistoryWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                messages: components["schemas"]["MessageWithOptionalLiveLocation"][];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageLiveLocationReceivedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageLiveLocation"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageLiveLocationUpdatedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessageLiveLocation"] & {
+                    id: string;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 当前消息中的订单汇总；至少包含一个已知有效字段，不包含商品明细，也不表示支付结果或完整订单生命周期。 */
+        MessageOrder: {
+            /** @description 可选订单标识，与消息 ID 和顶层事件 ID 含义不同，不能用于替代消息关联。 */
+            id?: string;
+            /** @description 已提供的商品数量；零值保留，缺失不补零，也不根据数量构造明细。 */
+            item_count?: number;
+            /**
+             * @description inquiry 为询单，accepted 为已接受，declined 为已拒绝；未知时省略，accepted 不表示付款成功。
+             * @enum {string}
+             */
+            status?: "inquiry" | "accepted" | "declined";
+            thumbnail_url?: components["schemas"]["MessageCommerceHTTPURL"];
+            title?: string;
+            total?: components["schemas"]["MessageCommerceMoney"];
+        };
+        MessagePayload: (unknown & unknown) & (components["schemas"]["TextMessagePayload"] | components["schemas"]["MediaMessagePayload"] | components["schemas"]["ContactMessagePayload"] | components["schemas"]["LinkPreviewMessagePayload"] | components["schemas"]["PollMessagePayload"] | components["schemas"]["StickerMessagePayload"]);
+        MessagePinChange: {
+            /** @enum {string} */
+            change_type: "message_pin";
+            /**
+             * Format: date-time
+             * @description 已知的可靠操作时间，以 RFC3339 UTC 表示并保留精度；未知时省略，occurred_at 不保证可替代此时间。
+             */
+            changed_at?: string;
+            /** @enum {string} */
+            kind: "message_updated";
+        };
+        /** @description 仅更新目标消息的置顶状态；不提供或改写原消息类型、方向、正文和发送时间。 */
+        MessagePinMessage: {
+            /** @description 被操作的原消息 ID，在 provider、账号和会话范围内不透明；不是本次事件 ID。 */
+            id: string;
+            pin: components["schemas"]["MessagePinState"];
+        };
+        MessagePinParticipant: {
+            /** @description 相应渠道和账号范围内的不透明用户 ID，不要求特定渠道格式。 */
+            id: string;
+            /** @description 已知的非空显示名称，可省略；不用于参与者身份或事件去重。 */
+            name?: string;
+            /** @enum {string} */
+            type?: "user";
         };
         MessagePinRequest: components["schemas"]["MessageTargetRequest"] & {
             /** Format: uint32 */
             duration_seconds?: number;
             pinned: boolean;
         };
+        /** @description 本次置顶状态快照，每次整体替换旧 pin 对象；缺失的有效期也清除旧值，不影响消息其他字段。 */
+        MessagePinState: {
+            /** @description 仅置顶时可有，以秒为单位；未知时省略，0 不代表永久置顶。 */
+            duration_seconds?: number;
+            /**
+             * Format: date-time
+             * @description 可靠 changed_at 加正 duration_seconds 得到的到期时间；未知时省略，不能从回调接收时间计算。
+             */
+            expires_at?: string;
+            /** @description true 为置顶，false 为取消；字段必需，不能将缺失当成取消。 */
+            pinned: boolean;
+        } & ((({
+            /** @enum {unknown} */
+            pinned: false;
+        } & ({
+            duration_seconds?: never;
+            expires_at?: never;
+        } & {
+            [key: string]: unknown;
+        })) | ({
+            /** @enum {unknown} */
+            pinned: true;
+        } & unknown)) & unknown);
+        MessagePinUpdatedWebhookEvent: ({
+            account_id: string;
+            data: {
+                /** @description 执行本次置顶或取消的人，未知时省略；不得用来推测原消息作者。 */
+                actor?: components["schemas"]["MessagePinParticipant"];
+                conversation?: {
+                    id: string;
+                    /** @enum {string} */
+                    type: "user" | "group" | "channel";
+                } & {
+                    [key: string]: unknown;
+                };
+                event: components["schemas"]["MessagePinChange"];
+                message: components["schemas"]["MessagePinMessage"];
+                /** @description 可靠的原消息作者，未知时省略；不从 actor 或操作方向兜底。 */
+                sender?: components["schemas"]["MessagePinParticipant"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 事件幂等键，同次操作重放保持一致；置顶、取消和再次置顶为独立操作。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 事件发生时间，未知时可为接收时间；不保证是可靠操作时间，不用于补 changed_at 或计算有效期。
+             */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "message.updated";
+        } & {
+            [key: string]: unknown;
+        }) & unknown;
+        /** @description 原投票的静态内容，不是累计结果。保持选项顺序和原始标题；max_selections 是每人最大选择数而非参与人数。接收历史可能存在重复选项 ID，不能据此声称可以区分同名选项。 */
+        MessagePoll: {
+            /** @description 最大选择数，不超过 options 数量；单选为 1，全部可选时等于选项数量。 */
+            max_selections: number;
+            options: components["schemas"]["MessagePollOption"][];
+            question: string;
+        };
+        MessagePollHistoryWebhookEvent: components["schemas"]["MessagePollWebhookEvent"] & ({
+            data?: {
+                messages: unknown[];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 投票创建消息；id 标识原投票，创建、自同步及静态历史不提供 reply_token，也不生成正文或媒体附件。 */
+        MessagePollMessage: {
+            /** @enum {string} */
+            direction?: "inbound" | "outbound";
+            id: string;
+            mentions?: components["schemas"]["Mention"][];
+            poll: components["schemas"]["MessagePoll"];
+            referral?: components["schemas"]["MessageReferral"];
+            reply_to_message_id?: string;
+            /** @description 历史静态消息中已确认的原作者；实时作者在 data.sender。 */
+            sender?: components["schemas"]["ConversationStateActor"];
+            /** Format: date-time */
+            sent_at?: string;
+            /** @enum {string} */
+            type: "poll";
+        };
+        MessagePollOption: {
+            /** @description 在本投票内稳定的不透明选项 ID；使用回调值，不按标题自行计算。 */
+            id: string;
+            title: string;
+        };
+        MessagePollReceivedWebhookEvent: components["schemas"]["MessagePollWebhookEvent"] & ({
+            data?: {
+                message: components["schemas"]["MessagePollMessage"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 单个具名投票人的本次完整选择。decoded 的数组整体替换此人已有选择，空数组表示撤票；unavailable 保留已有结果并标记待确认，不能当作撤票。 */
+        MessagePollVote: {
+            /**
+             * @description 仅 unavailable 可提供；只描述本次选择不可用，不承诺额外恢复接口。WhatsApp 当前无法细分时提供 unknown。
+             * @enum {string}
+             */
+            reason?: "decryption_failed" | "missing_poll_context" | "unknown";
+            /** @description 仅 decoded 提供且必须出现；允许空数组。每个值来自原投票选项 ID，不表示本次新增票数。 */
+            selected_option_ids?: string[];
+            /** @enum {string} */
+            status: "decoded" | "unavailable";
+            /**
+             * Format: date-time
+             * @description 已知的可靠操作时间，保留毫秒精度；未知时省略，不用回调到达时间代替。未知时间或同时间冲突应保留待核对。
+             */
+            voted_at?: string;
+            /** @description 投票人的不透明 ID，与 data.actor.id 一致；不是原投票作者。 */
+            voter_id: string;
+        } & (({
+            /** @enum {unknown} */
+            status: "decoded";
+        } & ({
+            reason?: never;
+            selected_option_ids: unknown[];
+        } & {
+            [key: string]: unknown;
+        })) | ({
+            /** @enum {unknown} */
+            status: "unavailable";
+        } & ({
+            selected_option_ids?: never;
+        } & {
+            [key: string]: unknown;
+        })));
+        MessagePollVoteChange: {
+            /** @enum {string} */
+            change_type: "poll_vote";
+            /** @enum {string} */
+            kind: "message_updated";
+        };
+        /** @description id 是原投票消息 ID，仅更新此投票人的选择；不带操作消息的正文、作者、方向、发送时间或引用凭据。 */
+        MessagePollVoteMessage: {
+            id: string;
+            poll_vote: components["schemas"]["MessagePollVote"];
+            /** @enum {string} */
+            type: "poll";
+        };
+        MessagePollVoteUpdatedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: components["schemas"]["ConversationStateAccount"];
+                /** @description 本次投票人，id 必须与 poll_vote.voter_id 一致；不能据此填充原消息作者。 */
+                actor: components["schemas"]["ConversationStateActor"];
+                conversation?: components["schemas"]["ConversationStateReference"];
+                event: components["schemas"]["MessagePollVoteChange"];
+                message: components["schemas"]["MessagePollVoteMessage"];
+            };
+            /** @description 本次标准事件的幂等键，不是原投票 ID 或选项 ID；不暴露渠道的操作消息 ID。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 未知原生时间时可能是接收时间；判断投票新旧使用可靠 voted_at。
+             */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "message.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        MessagePollWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message?: components["schemas"]["MessageWithOptionalPoll"];
+                messages?: components["schemas"]["MessageWithOptionalPoll"][];
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 当前消息中的商品卡片，至少包含一个已知有效字段；缺图片或价格不影响其他商品信息。 */
+        MessageProduct: {
+            description?: string;
+            /** @description 可选商品标识，与消息 ID 和顶层事件 ID 含义不同，不能用于替代消息关联。 */
+            id?: string;
+            image_url?: components["schemas"]["MessageCommerceHTTPURL"];
+            price?: components["schemas"]["MessageCommerceMoney"];
+            title?: string;
+            url?: components["schemas"]["MessageCommerceHTTPURL"];
+        };
         MessageReactionRequest: components["schemas"]["MessageTargetRequest"] & {
             /** @description 空字符串表示取消回应。 */
             emoji?: string;
         };
+        /** @description 当前消息的可选来源信息；仅输出类型正确的已知字段，字符串必须非空，显式 false 保留，无可用字段时省略整个对象。所有字段均可省略，缺失不表示否定或清空。 */
+        MessageReferral: {
+            body?: string;
+            /**
+             * @description 来源素材的已知媒体类型，未知时省略。
+             * @enum {string}
+             */
+            media_type?: "image" | "video";
+            /**
+             * Format: uri
+             * @description 来源素材的绝对 HTTP(S) URL，不等同于当前消息附件地址。
+             */
+            media_url?: string;
+            provider_extensions?: components["schemas"]["MessageReferralProviderExtensions"];
+            /**
+             * @description 仅确认广告来源时提供 ad，来源未知时省略。
+             * @enum {string}
+             */
+            source?: "ad";
+            /** @description 来源标识；作为不透明字符串保存，不转换成数字。 */
+            source_id?: string;
+            /**
+             * Format: uri
+             * @description 来源 URL，不承诺为广告主落地页；必须为带主机名的绝对 HTTP(S) URL，保留完整查询参数。
+             */
+            source_url?: string;
+            /**
+             * Format: uri
+             * @description 来源素材缩略图的绝对 HTTP(S) URL；缺失不影响其他归因字段。
+             */
+            thumbnail_url?: string;
+            title?: string;
+        };
+        MessageReferralHistoryWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                messages: unknown;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "conversation.history";
+        } & {
+            [key: string]: unknown;
+        });
+        /** @description 可选的渠道扩展；仅 provider=whatsapp 时允许出现，无可用字段时省略。 */
+        MessageReferralProviderExtensions: {
+            whatsapp: components["schemas"]["WhatsAppMessageReferralExtension"];
+        };
+        MessageReferralReceivedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: {
+                    referral: components["schemas"]["MessageReferral"];
+                } & {
+                    [key: string]: unknown;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.received";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageReferralUpdatedWebhookEvent: components["schemas"]["MessageReferralWebhookEvent"] & ({
+            data?: {
+                message: {
+                    /** @description 被编辑消息的 ID，与该消息原记录保持一致。 */
+                    id: string;
+                    referral: components["schemas"]["MessageReferral"];
+                } & {
+                    [key: string]: unknown;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            /** @enum {unknown} */
+            type?: "message.updated";
+        } & {
+            [key: string]: unknown;
+        });
+        MessageReferralWebhookEvent: ({
+            account_id: string;
+            data: {
+                message?: components["schemas"]["MessageWithOptionalReferral"];
+                messages?: components["schemas"]["MessageWithOptionalReferral"][];
+            } & {
+                [key: string]: unknown;
+            };
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @enum {string} */
+            type: "message.received" | "message.updated" | "conversation.history";
+        } & {
+            [key: string]: unknown;
+        }) & unknown;
         MessageRevokeRequest: components["schemas"]["MessageTargetRequest"];
         MessageTargetRequest: {
             account_id: string;
@@ -1295,27 +3933,237 @@ export interface components {
             /** @description 目标消息作者标识；缺省通常表示账号自身。 */
             sender_id?: string;
         };
+        MessageWithOptionalCommerce: components["schemas"]["MessageCommerce"] | (components["schemas"]["MessageWithOptionalReferral"] & ({
+            order?: never;
+            product?: never;
+            type?: unknown;
+        } & {
+            [key: string]: unknown;
+        }));
+        MessageWithOptionalContactCards: ({
+            contacts?: components["schemas"]["ReceivedContactCard"][];
+        } & {
+            [key: string]: unknown;
+        }) & unknown;
+        MessageWithOptionalInteractive: components["schemas"]["MessageInteractiveMessage"] | (components["schemas"]["MessageWithOptionalCommerce"] & ({
+            interactive?: never;
+            interactive_response?: never;
+            type?: unknown;
+        } & {
+            [key: string]: unknown;
+        }));
+        MessageWithOptionalLinkPreview: components["schemas"]["MessageLinkPreviewMessage"] | (components["schemas"]["MessageWithOptionalInteractive"] & ({
+            link_preview?: never;
+            type?: unknown;
+        } & {
+            [key: string]: unknown;
+        }));
+        MessageWithOptionalLiveLocation: {
+            [key: string]: unknown;
+        } & unknown;
+        MessageWithOptionalPoll: components["schemas"]["MessagePollMessage"] | (components["schemas"]["MessageWithOptionalLinkPreview"] & ({
+            poll?: never;
+            poll_vote?: never;
+            type?: unknown;
+        } & {
+            [key: string]: unknown;
+        }));
+        /** @description 广告归因以可选字段补充原消息，不改变消息正文、附件及已有类型。 */
+        MessageWithOptionalReferral: {
+            /** @description 可选消息 ID；未提供时不能用顶层事件 ID、来源标识或点击标识替代。 */
+            id?: string;
+            referral?: components["schemas"]["MessageReferral"];
+        } & {
+            [key: string]: unknown;
+        };
         OkData: {
             /** @constant */
             ok: true;
         };
+        PasskeyResponseRequest: {
+            /** @description 浏览器生成的 WebAuthn 凭证响应序列化后的完整 JSON 字符串。 */
+            webauthn_response: string;
+        };
+        /** @description 创建投票；不能附带 text、媒体、名片、链接预览或其他消息载荷。渠道限制见发送接口说明。 */
+        PollMessagePayload: {
+            poll: components["schemas"]["SendMessagePoll"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "poll";
+        };
+        Post: {
+            author?: components["schemas"]["PostAuthor"];
+            /**
+             * Format: date-time
+             * @description 可靠取得的创建时间，RFC3339 UTC；未知时省略。
+             */
+            created_at?: string;
+            id: components["schemas"]["PostResourceID"];
+            /** @description 可靠取得时保留原文，包括空字符串；未知时省略。 */
+            text?: string;
+        };
+        PostAuthor: {
+            /** @description 可靠取得的非空头像地址；未知时省略。 */
+            avatar_url?: string;
+            /** @description 可靠取得时保留原文，包括空字符串；未知时省略。 */
+            display_name?: string;
+            id: components["schemas"]["PostResourceID"];
+        };
+        PostComment: {
+            author?: components["schemas"]["PostAuthor"];
+            /**
+             * Format: date-time
+             * @description 可靠取得的评论创建时间，RFC3339 UTC；未知时省略，不用观察时间代替。
+             */
+            created_at?: string;
+            id: components["schemas"]["PostResourceID"];
+            /** @description 仅在确认父子关系后提供；缺失本身不能证明该评论是可回复的一级评论。 */
+            parent_comment_id?: components["schemas"]["PostResourceID"];
+            post_id: components["schemas"]["PostResourceID"];
+            /** @description 可靠取得时保留原文，包括空字符串；未知时省略。 */
+            text?: string;
+        };
+        PostCommentCreatedWebhookEvent: {
+            /** @description 平台账号 ID。 */
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref: string;
+                };
+                /** @description post_id 必须与 data.post.id 完全一致。 */
+                comment: components["schemas"]["PostComment"];
+                post: components["schemas"]["Post"];
+            };
+            /** @description 稳定事件 ID；重复通知、重试和正文补全不会改变，接收方据此去重。 */
+            id: string;
+            /**
+             * Format: date-time
+             * @description 可信发生时间，缺失时为观察时间；不等价于评论创建时间，重试保持原值。
+             */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "tiktok";
+            /** @enum {string} */
+            type: "post.comment.created";
+        };
+        PostCommentListRequest: {
+            /** @description 原样传回上一页的 next_cursor；首次请求省略。 */
+            cursor?: string;
+            /** @default 20 */
+            limit?: number;
+            post_id: components["schemas"]["PostResourceID"];
+        };
+        PostCommentListResult: {
+            has_more: boolean;
+            items: components["schemas"]["PostComment"][];
+            /** @description 不透明游标，仅 has_more=true 时提供，调用方原样传回。 */
+            next_cursor?: string;
+        } & ({
+            /** @constant */
+            has_more?: true;
+            /** @description 不透明游标，仅 has_more=true 时提供，调用方原样传回。 */
+            next_cursor: string;
+        } | ({
+            /** @constant */
+            has_more?: false;
+        } & {
+            next_cursor?: never;
+        }));
+        PostCommentReplyRequest: {
+            /** @description 省略时发布一级评论；提供时表示回复目标帖子下的一级评论，不预先确认其所属帖子或层级。显式空串、纯空白、null 或非字符串均不合法。 */
+            comment_id?: components["schemas"]["PostResourceID"];
+            post_id: components["schemas"]["PostResourceID"];
+            /** @description 非空白正文，保留原文，不自动删除首尾空格。 */
+            text: string;
+        };
+        PostCommentReplyResult: {
+            /** @description 仅可靠取得本次新评论回执时提供，不保证每次都有。发布一级评论时不含 parent_comment_id；回复时 parent_comment_id 与请求 comment_id 一致。 */
+            comment?: components["schemas"]["PostComment"];
+            /** @enum {string} */
+            status: "accepted";
+        };
+        PostInfoRequest: {
+            post_id: components["schemas"]["PostResourceID"];
+        };
+        PostListResult: {
+            has_more: boolean;
+            items: components["schemas"]["Post"][];
+            /** @description 不透明游标，仅 has_more=true 时提供，调用方原样传回。 */
+            next_cursor?: string;
+        } & ({
+            /** @constant */
+            has_more?: true;
+            /** @description 不透明游标，仅 has_more=true 时提供，调用方原样传回。 */
+            next_cursor: string;
+        } | ({
+            /** @constant */
+            has_more?: false;
+        } & {
+            next_cursor?: never;
+        }));
+        /** @description 第三方字符串标识；按原值传递，不转换为数字。 */
+        PostResourceID: string;
+        ProviderAuthSession: {
+            account_id: string;
+            /** @example qrcode */
+            auth_mode: string;
+            /** @description 当前授权步骤所需的渠道载荷，结构会随授权状态变化。 */
+            auth_payload?: components["schemas"]["FreeFormObject"];
+            /**
+             * Format: uri
+             * @description 短期有效的 Provider 授权页面地址，其中包含不透明授权凭证。调用方应将其 作为敏感信息处理，不得写入公开日志或分享给无关用户。
+             */
+            authorize_url: string;
+            /** @description 当前会话允许使用的授权模式。 */
+            available_auth_modes: string[];
+            /** Format: date-time */
+            expires_at: string;
+            provider: components["schemas"]["ProviderName"];
+            /**
+             * @example pending_auth
+             * @example passkey_required
+             * @example authorized
+             */
+            status: string;
+            /** @description 当前授权会话是否允许切换授权模式。 */
+            switchable: boolean;
+        };
         /**
-         * @description 正式对外开放的 provider 名称；实际可分配区域以 provider regions 接口为准。
+         * @description provider 输入名称。兼容 `x`、`x_client`、`twitter_client`，这些输入会归一化为 `twitter` 并以 `twitter` 输出；Webhook URL path 不适用该别名规则。
          * @enum {string}
          */
-        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "x" | "zalo" | "tiktok";
-        /** @description 账号在 provider 侧的公开资料。下列为标准字段，其他字段可能因 provider 而异。 */
+        ProviderInputName: "telegram" | "whatsapp" | "line" | "twitter" | "zalo" | "tiktok" | "whatsapp-protocol" | "x" | "x_client" | "twitter_client";
+        /**
+         * @description 响应输出的 canonical provider 名称。`whatsapp-protocol` 仅支持 session，本期支持 text 和 image，以及联系人详情；不支持 reply、mentions、联系人列表及写动作、会话或群组能力。
+         * @enum {string}
+         */
+        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "zalo" | "tiktok" | "whatsapp-protocol";
+        /** @description 账号在渠道侧的资料。下列为标准字段，其他字段因渠道而异。 */
         ProviderProfile: {
             /** @description 账号头像 URL。 */
             avatar_url?: string;
             bio?: string;
+            /** @description WhatsApp BusinessName；渠道未返回时该字段缺失。 */
+            business_name?: string;
+            /** @description 仅 WhatsApp 账号详情在可确认当前授权会话时提供的登录设备编号；未知时省略。重新授权后可能变化，不作为永久设备标识，也不用于比较历史消息来源。 */
+            device_id?: components["schemas"]["WhatsAppDeviceID"];
+            /** @description 账号展示名称；WhatsApp 按 BusinessName 优先、PushName 回退的规则生成。 */
             display_name?: string;
             first_name?: string;
-            /** @description provider 侧账号标识。WhatsApp 在资料同步完成后返回 canonical LID（格式为 `{account}@lid`）；其他渠道在取得稳定账号标识后返回。该字段在同步完成前可能缺失。 */
+            /** @description 渠道侧账号标识。WhatsApp 返回 LID 格式；该字段在账号资料同步完成前可能缺失。 */
             id?: string;
             last_name?: string;
-            /** @description 已归一化的账号手机号。 */
+            /** @description 账号手机号，已归一化（去除空格、连字符、加号）。 */
             phone?: string;
+            /**
+             * @description 目前仅 WhatsApp 定义并返回该字段，表示配对时的登录平台标识，按不透明字符串透传。取值集合不封闭，客户端必须兼容未知值；其他渠道不定义该字段语义。该字段与 device_platform 不同。
+             * @example smba
+             */
+            platform?: string;
+            /** @description WhatsApp 当前账号设置的 PushName；其他渠道不定义该字段语义。 */
+            push_name?: string;
             username?: string;
         } & {
             [key: string]: unknown;
@@ -1324,8 +4172,38 @@ export interface components {
             provider: components["schemas"]["ProviderName"];
             regions: components["schemas"]["RegionAvailability"][];
         };
+        /** @description 二维码授权检查的标准结果。字段可能因渠道和当前步骤扩展；调用方应优先读取 `status`、`auth_status` 和 `auth_payload`。TikTok 扫码后可能返回 `awaiting_code`，自动处理验证码时返回 `pending`。`account_id`、`expires_at` 等字段不是所有 Provider 都稳定返回，因此不作为必填字段。 */
+        QRAuthCheckData: {
+            /** @constant */
+            action?: "check_qr_auth";
+            auth_payload?: components["schemas"]["QRAuthCheckPayload"];
+            /** @description 与当前授权步骤对应的标准状态，通常与 `status` 一致。 */
+            auth_status?: string;
+            provider?: components["schemas"]["ProviderName"];
+            /** @description 当前授权流程状态，例如 `awaiting_qr_scan`、`awaiting_code`、`pending`、`passkey_required` 或 `authorized`。 */
+            status?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description 当前步骤所需的标准载荷。普通二维码使用 `qr_code`；验证码步骤使用 `type=code`；Passkey 使用 `type=passkey` 和 `public_key`。互斥步骤的载荷 不会同时出现。 */
+        QRAuthCheckPayload: {
+            public_key?: components["schemas"]["FreeFormObject"];
+            /** @description 普通二维码内容或可直接展示的二维码 data URL。 */
+            qr_code?: string;
+            /** @description 当前载荷类型；验证码步骤为 `code`，Passkey 步骤为 `passkey`。 */
+            type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description 接收名片保留完整 vCard 原文和原始顺序；与发送用结构化 ContactCard 分开，不解析重写电话等字段。 */
+        ReceivedContactCard: {
+            /** @description 来源提供的显示名；未知或空白省略，不代表通讯录清空。 */
+            name?: string;
+            /** @description 完整原文，保留换行、Unicode 和扩展字段；载体非空不等于内容适合直接展示。 */
+            vcard: string;
+        };
         Recipient: {
-            /** @description provider 侧接收方 ID。 */
+            /** @description 渠道侧接收方标识。 */
             id: string;
             type: components["schemas"]["ConversationType"];
         };
@@ -1335,7 +4213,7 @@ export interface components {
             supported: boolean;
         };
         ReplyTo: {
-            /** @description 来自入站事件 `data.message.reply_token` 或发送成功后 `SendMessageResult.reply_token` 的不透明句柄；调用时应原样回传。 */
+            /** @description 来自可引用消息事件 `data.message.reply_token` 或发送响应 `data.reply_token` 的不透明句柄，按原账号及会话原样使用；不能用消息 ID 替代。 */
             reply_token: string;
         };
         ResponseMeta: {
@@ -1348,72 +4226,377 @@ export interface components {
             account_id: string;
             /** @enum {string} */
             action: "refresh_status" | "start" | "stop" | "reconnect";
+            /** @description 可选的授权提示。本次 Provider 明确返回二维码、Passkey 等授权证据， 或当前 Session 已持久化此前由 Provider/Webhook 明确确认的授权进行态时 才为 `true`；不能仅根据 `runtime_status=disconnected` 或 `client_connect=false` 推断。运行态接口不返回二维码、`code`、 `qrcode`、`auth_payload` 或 `provider_data`；调用方应改用 `/v1/accounts/{account_id}/auth/qr/start` 和 `/v1/accounts/{account_id}/auth/qr/check` 获取标准授权状态与载荷。 */
+            auth_required?: boolean;
+            /**
+             * @description 可选的标准授权状态快照，仅在本次运行态操作取得 Provider 明确授权证据， 或复用当前 Session 中已确认的授权进行态时返回，例如 `pending`、 `awaiting_qr_scan` 或 `passkey_required`。该字段用于指引调用方进入授权流程， 不替代授权接口返回的完整状态与载荷。
+             * @example pending
+             * @example awaiting_qr_scan
+             * @example passkey_required
+             */
+            auth_status?: string;
             /** @example succeeded */
             operation_status: string;
             provider: components["schemas"]["ProviderName"];
             runtime_error: string;
             runtime_status: components["schemas"]["RuntimeStatus"];
         };
-        /** @enum {string} */
+        /**
+         * @description 平台标准账号运行态。Provider 原始值不会直接对外返回：`ready`、`online`、 `connected`、`active`、`started` 统一为 `running`；`offline`、`inactive`、 `stop` 统一为 `stopped`；`failed` 统一为 `error`。
+         * @enum {string}
+         */
         RuntimeStatus: "unknown" | "starting" | "running" | "stopping" | "stopped" | "reconnecting" | "disconnected" | "error";
+        /** @description 公共请求只要求目标链接；可选标题和摘要允许空字符串，但不允许 null。WhatsApp 额外要求非空 title/image_url，title 最多 255 个 Unicode 字符、description 最多 1024 个 Unicode 字符；限制由本项目的渠道发送策略执行。 */
+        SendMessageLinkPreview: {
+            description?: string;
+            image_url?: components["schemas"]["MessageLinkPreviewHTTPURL"];
+            title?: string;
+            url: components["schemas"]["MessageLinkPreviewHTTPURL"];
+        };
+        /** @description 题目和选项标题保留原文；max_selections 必须是 1 到选项数量之间的整数，不表示投票人数。1.0、1e0 等整数数值与 1 等价，非整数非法。公共结构不限制题目长度、最大选项数量或标题重复；具体渠道可有额外限制。 */
+        SendMessagePoll: {
+            /** @description 每位投票者最多可选的选项数量；不得大于 options 数量，该跨字段约束由接口验证。 */
+            max_selections: number;
+            options: components["schemas"]["SendMessagePollOption"][];
+            question: string;
+        };
+        SendMessagePollOption: {
+            /** @description 选项原始标题，发送时不 trim、不改大小写或 Unicode 形式。 */
+            title: string;
+        };
+        /** @description 发送消息时使用的渠道扩展参数。字段仅在对应渠道和消息类型支持时生效。 */
+        SendMessageProviderData: {
+            /** @description 音频或视频时长，单位为秒。仅适用于使用 WhatsApp 账号发送的 `audio` 或 `video` 消息；发送 `video` 时取值范围为 0 到 4294967295（uint32）。 */
+            seconds?: number;
+            /** @description 音频波形数据。仅适用于使用 WhatsApp 账号发送的 `audio` 消息。 非空值必须使用标准 Base64 编码，且解码后必须是可解析的 JSON 波形数据；空字符串按未提供处理，其他格式错误返回 HTTP 400 `provider_invalid_request`。 */
+            waveform?: string;
+        } & {
+            [key: string]: unknown;
+        };
         SendMessageRequest: {
             account_id: string;
+            /** @description 群消息的 @ 目标列表。`type=member` 使用对应 Provider 的成员 `id`； `type=all` 表示 @所有人，仅在 Provider 支持时生效，否则返回 `unsupported_message_type`。 */
             mentions?: components["schemas"]["Mention"][];
             message: components["schemas"]["MessagePayload"];
-            provider_data?: components["schemas"]["FreeFormObject"];
+            provider_data?: {
+                [key: string]: unknown;
+            };
             reply_to?: components["schemas"]["ReplyTo"];
             to: components["schemas"]["Recipient"];
-        };
+        } & unknown;
         SendMessageResult: {
             account_id: string;
             message_id: string;
             provider_ref?: string;
-            /** @description WhatsApp 发送成功后可能同步返回不透明引用句柄；无法生成稳定句柄时省略。该值按敏感数据处理，不要写入日志。 */
+            /** @description WhatsApp 发送成功且可引用上下文完整时返回；包括新发送投票，普通文字可据此引用它。未提供时省略，accepted 状态不因此改变。 */
             reply_token?: string;
             /** @example accepted */
             status: string;
         };
+        /** @description provider 会话导入参数。`whatsapp-protocol` 的协议凭证使用同名嵌套对象； 其他 provider 的既有自由字段通过 additionalProperties 保持兼容。 */
+        SessionImportRequest: {
+            /** Format: uri */
+            session_url?: string;
+            "whatsapp-protocol"?: components["schemas"]["WhatsAppProtocolSessionImportParams"];
+        } & {
+            [key: string]: unknown;
+        };
         /** @enum {string} */
-        StandardEventType: "*" | "message.received" | "message.updated" | "message.deleted" | "message.read" | "message.reaction" | "message.delivered" | "conversation.updated" | "conversation.deleted" | "conversation.cleared" | "conversation.history" | "group.updated" | "group.join_request" | "account.status.updated" | "account.started" | "account.history.synced" | "account.auth.required" | "account.auth.succeeded" | "account.auth.failed";
+        StandardEventType: "*" | "contact.updated" | "post.comment.created" | "message.received" | "message.updated" | "message.deleted" | "message.read" | "message.reaction" | "message.delivered" | "call.incoming" | "call.answered" | "call.ended" | "conversation.updated" | "conversation.deleted" | "conversation.cleared" | "conversation.history" | "group.updated" | "group.join_request" | "account.status.updated" | "account.profile.updated" | "account.started" | "account.history.synced" | "account.auth.required" | "account.auth.succeeded" | "account.auth.failed";
+        /** @description 授权动作的结果，字段随渠道和当前授权步骤变化。 WhatsApp 配对码位于 `verify_code`；Telegram 可通过 `auth_payload.type=code` 提示等待用户提交验证码。`account_id`、`auth_fields` 和 `expires_at` 不是此动作的统一返回字段，不能按授权状态查询的响应结构读取本接口。 */
+        StartCodeAuthData: {
+            /** @enum {string} */
+            action: "start_auth";
+            /** @description 渠道特定的授权提示；Telegram 可返回 type=code，不包含用户收到的验证码。 */
+            auth_payload?: {
+                /** @description 当前授权提示的类型；Telegram 验证码步骤为 code。 */
+                type?: string;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 当前授权步骤的标准状态，通常与 status 一致。 */
+            auth_status?: string;
+            provider: components["schemas"]["ProviderName"];
+            /** @description 当前授权流程状态；awaiting_code 表示等待用户操作，authorized 才表示授权完成。 */
+            status?: string;
+            /** @description 仅 WhatsApp 手机号配对返回；直接位于 data 下，不在 auth_payload 内。 展示给用户在手机 WhatsApp 中输入，不回传 /auth/code。 响应不保证提供过期时间，配对码失效时需重新发起配对。 */
+            verify_code?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StickerMessagePayload: {
+            file_key?: string;
+            /** Format: uri */
+            file_url?: string;
+            /** @enum {string} */
+            type: "sticker";
+            /** Format: uri */
+            url?: string;
+        } & ({
+            url: unknown;
+        } | {
+            file_url: unknown;
+        } | {
+            file_key: unknown;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "sticker";
+        };
+        TextMessagePayload: {
+            caption?: string;
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+        };
         WebhookEndpoint: {
+            /** @description 账号独立端点的公开账号 ID；工作空间端点省略此字段，不返回 null。 */
+            account_id?: string;
             id: string;
             retry_policy?: components["schemas"]["FreeFormObject"];
             signing_enabled: boolean;
-            status: string;
+            /** @enum {string} */
+            status: "active" | "inactive";
             subscribed_events?: components["schemas"]["StandardEventType"][];
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description 必须是绝对 HTTP(S) URL。
+             */
             url: string;
         };
+        /** @description url 与 status 必填；其他配置按完整更新语义处理。 account_id 为可选公开账号 ID：创建时省略表示工作空间端点，更新时省略保留已有绑定。 同一账号最多一个 active 独立端点，inactive 可配置多个且不占用 active 名额；创建 active 或将 inactive 改为 active 时，存在其他 active 端点返回 409 account_webhook_already_exists（40008）。原 active 端点保持 active 的更新允许执行。 更新时提供 account_id 只校验一致，不能修改端点归属；不接受 null、空白或重复的 account_id。 字段名必须精确使用 account_id；大小写变体返回 400 invalid_request。 */
         WebhookEndpointRequest: {
+            /** @description 可选的公开账号 ID，例如 `acc_example`；创建用于绑定，更新只用于校验原绑定。 */
+            account_id?: string;
             retry_policy?: components["schemas"]["FreeFormObject"];
             /** @description 用于签名 webhook 投递的密钥；仅请求中提交，不会在响应中返回。 */
             signing_secret?: string;
-            status: string;
-            /** @description 为空或省略表示接收全部事件。 */
+            /** @enum {string} */
+            status: "active" | "inactive";
+            /** @description 为空、省略或包含 `*` 表示接收当前工作区有权接收的全部事件，包括 contact.updated；is_beta=true 的内测工作区还包含 call.incoming、call.answered、call.ended，无需额外逐项订阅。非内测工作区可以使用通配订阅，但不会收到通话事件；明确订阅通话事件仍返回 403 beta_feature_not_enabled（41002）。非通配的具体事件列表仅接收列出的事件。每次投递、重试及死信重放均重新核验内测资格，查询异常不放行。呼入暂未开放；message.* 通话记录不受内测门禁影响。 */
             subscribed_events?: components["schemas"]["StandardEventType"][];
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description 必须是绝对 HTTP(S) URL。
+             */
             url: string;
         };
-        Workspace: {
-            /** Format: uint64 */
-            account_quota: number;
-            account_quota_unlimited: boolean;
-            metadata?: {
-                [key: string]: string;
+        WhatsAppAccountAuthFailedWebhookEvent: {
+            /** @description device-api 签发的账号 public_id。 */
+            account_id: string;
+            data: {
+                /** @enum {string} */
+                auth_status: "failed";
+                /** @description 可选的结构化失败原因；旧事件或其他失败场景可以省略，缺失不表示成功。 */
+                error?: components["schemas"]["AccountWebhookError"];
+                event: {
+                    /** @enum {string} */
+                    auth_status: "failed";
+                    /** @enum {string} */
+                    kind: "account_auth_status";
+                    /** @enum {string} */
+                    runtime_status: "disconnected";
+                };
+                /** @description 历史失败原因字段，保持原有取值与省略规则；新增集成优先使用 error。 */
+                last_error?: string;
+                /** @enum {string} */
+                runtime_status: "disconnected";
             };
-            name: string;
-            status: string;
+            /** @description 用于幂等处理的事件 ID。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "whatsapp";
+            /** @enum {string} */
+            type: "account.auth.failed";
         };
-        WorkspaceUpdateRequest: {
+        WhatsAppContactCreateOptions: {
+            first_name?: string;
+            full_name?: string;
+            /**
+             * @description 是否同步至当前 WhatsApp 账号关联设备的系统通讯录。
+             * @default false
+             */
+            sync_to_device_contacts?: boolean;
+        };
+        /** @description 已确认的 WhatsApp 设备编号；0 是有效值，未知时整个字段省略，不返回 null 或空串。 */
+        WhatsAppDeviceID: number;
+        WhatsAppMessageDeviceSender: {
+            /** @description 该实时消息的发送设备编号，未知时省略。 */
+            device_id?: components["schemas"]["WhatsAppDeviceID"];
+            /** @description 既有账号级发送者标识，不包含设备后缀，取值规则不因 device_id 改变。 */
+            id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        WhatsAppMessageDeviceWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                message?: {
+                    /** @enum {string} */
+                    direction?: "inbound" | "outbound";
+                    id?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                sender?: components["schemas"]["WhatsAppMessageDeviceSender"];
+            } & {
+                [key: string]: unknown;
+            };
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "whatsapp";
+            /** @enum {string} */
+            type: "message.received" | "message.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description 可选的 WhatsApp 广告上下文；各字段独立提供，无有效字段时省略整个扩展。显式 false 与字段缺失含义不同。 */
+        WhatsAppMessageReferralExtension: {
+            /** @description 上游提供的欢迎语交互入口类型；按不透明字符串保存，不限定枚举。 */
+            automated_greeting_message_cta_type?: string;
+            /** @description 上游明确提供的欢迎语展示标记；保留 false，缺失时不推断展示状态。 */
+            automated_greeting_message_shown?: boolean;
+            /** @description 上游提供的广告通话入口标记；保留 false，该标记不证明已发生通话。 */
+            click_to_whatsapp_call?: boolean;
+            /** @description 上游提供的自动回复标记；保留 false，不用于推断或覆盖欢迎语展示状态。 */
+            contains_auto_reply?: boolean;
+            /** @description 上游提供的 CTWA Flows 自动回复标记；保留 false，不代表提供 Flows 内容或执行能力。 */
+            contains_ctwa_flows_auto_reply?: boolean;
+            /** @description WhatsApp 提供的广告点击标识；作为不透明字符串保存，未提供时省略该字段。 */
+            ctwa_clid?: string;
+            /** @description 广告上下文提供的欢迎语正文，原样保存；不代表一条具有独立消息身份的发送记录。 */
+            greeting_message_body?: string;
+            /** @description 上游提供的来源应用标识；仅在有原值时提供，不从其他来源信息推断。 */
+            source_app?: string;
+        };
+        /** @description WhatsApp Protocol 的会话导入凭证，仅可提交至账号会话导入接口。 响应不回显协议密钥或其他敏感凭证。手机号用于身份一致性校验；协议公钥、协议私钥 仅供上游启动使用。`edge_routing` 由平台固定注入，业务方不得提交。 */
+        WhatsAppProtocolSessionImportParams: {
+            /** @example <app-version> */
+            app_version?: string;
+            /**
+             * @description 当前认证十六进制数据。
+             * @example <hex-auth-data>
+             */
+            auth_hex_data?: string;
+            /**
+             * @deprecated
+             * @description 兼容旧字段：认证十六进制数据。
+             * @example <hex-auth-data>
+             */
+            authhexdata?: string;
+            /** @example <country-code> */
+            country?: string;
+            /** Format: uint32 */
+            device?: number;
+            fallback_server_addresses?: string[];
+            /**
+             * @deprecated
+             * @description 兼容旧调用方保留；当前值会被忽略且不保存，建议调用方省略。
+             */
+            hash?: string;
+            /**
+             * @description 身份私钥。
+             * @example <base64-private-key>
+             */
+            identity_pri_key: string;
+            /**
+             * @description 身份公钥。
+             * @example <base64-public-key>
+             */
+            identity_pub_key: string;
+            /**
+             * @description 对端 KEM 公钥。
+             * @example <base64-kem-public-key>
+             */
+            peer_kem_public?: string;
+            /**
+             * @description 允许带空格、连字符、括号或加号的格式化输入；服务端会归一化为正数字符串。
+             * @example <normalized-phone>
+             */
+            phone: string;
+            /** Format: int32 */
+            platform?: number;
+            /** @example <handshake-mode> */
+            pq_handshake_mode?: string;
+            /** @example <provider-server-address> */
+            server_address?: string;
+            /**
+             * @description 协议私钥。
+             * @example <base64-private-key>
+             */
+            static_pri_key: string;
+            /**
+             * @description 协议公钥。
+             * @example <base64-public-key>
+             */
+            static_pub_key: string;
+            use_xxkem_handshake?: boolean;
+        };
+        Workspace: {
+            /**
+             * Format: uint64
+             * @description 当前生效的只读账号总容量，包含免费额度和有效期内的付费额度，不扣除已用数量；已到期的付费额度不计入。
+             */
+            readonly account_quota: number;
+            /** @description 兼容保留的只读字段，当前配额模式固定返回 false；账号容量以 account_quota 为准。 */
+            readonly account_quota_unlimited: boolean;
+            /**
+             * Format: uint64
+             * @description 当前已占用的只读账号额度，账号创建后即占用，删除后释放；待授权、停止或断线的账号仍计入。付费额度到期后，已用额度可能超过 account_quota，按实际已用值返回。
+             */
+            readonly account_quota_used: number;
+            /**
+             * @description 工作区是否已开通内测，默认关闭；仅服务端可管理，客户不能通过 PATCH 或 metadata 修改。
+             * @default false
+             */
+            readonly is_beta: boolean;
             metadata?: {
                 [key: string]: string;
             };
             name: string;
-            status: string;
+            status: components["schemas"]["WorkspaceStatus"];
+        };
+        /**
+         * @description Workspace 状态。设置为 inactive 后，当前 Workspace 的 API Key 将不再通过鉴权。
+         * @enum {string}
+         */
+        WorkspaceStatus: "active" | "inactive";
+        WorkspaceUpdateRequest: {
+            /** @description 省略时保留现有 metadata；传入空对象时只清空客户可写字段。 `account_quota`、`account_quota_unlimited` 与 `is_beta` 是服务端保留键，提交任一保留键返回 `400 invalid_request`；顶层提交 `is_beta` 同样拒绝。 */
+            metadata?: {
+                [key: string]: string;
+            };
+            name: string;
+            status: components["schemas"]["WorkspaceStatus"];
+        } & {
+            is_beta?: never;
         };
     };
     responses: {
-        /** @description provider 动作结果。字段随 action 与 provider 不同而变化。 */
+        /** @description 创建 active 端点或将 inactive 端点改为 active 时，账号已有其他 active Webhook 端点；查询并更新已有 active 端点，或先停用它再启用其他端点。 */
+        AccountWebhookAlreadyExists: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description 渠道操作结果，返回字段因操作和渠道而异。 */
         ActionResult: {
             headers: {
                 [name: string]: unknown;
@@ -1424,7 +4607,7 @@ export interface components {
                 };
             };
         };
-        /** @description 当前 provider 能力不可用。 */
+        /** @description 渠道服务暂不可用或返回了无效响应；Device API 识别到 whatsapp-protocol 账号当前登录受限时使用 numeric_code=30020，调用方应停止自动重试并引导用户检查官方 WhatsApp 客户端。 Device API 识别到 whatsapp 账号连接未建立时使用 numeric_code=30021，适用于消息、联系人、群组等操作，message 保留原始连接错误。 调用方应暂停依赖连接的请求，调用 POST /v1/accounts/{account_id}/runtime/refresh，按最新状态恢复连接，确认 runtime_status=running 后再发起业务请求。 该错误不表示已登出或授权失效，也不会自动重发请求、重连或修正账号状态。 numeric_code=30010 表示操作失败，message 在有原因时附带原始错误原因；调用方按数字码判断，不依赖错误文案。 仅 whatsapp 的群消息发送明确需要管理员权限时使用 numeric_code=34012；停止自动重试，核实群权限和账号角色，由管理员调整后再发送。 */
         BadGateway: {
             headers: {
                 [name: string]: unknown;
@@ -1442,6 +4625,25 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description 目标工作区未开通内测，无法调用通话接口或显式订阅 call.incoming、call.answered、call.ended。 */
+        BetaFeatureNotEnabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "request_id": "req_example",
+                 *       "error": {
+                 *         "code": "beta_feature_not_enabled",
+                 *         "numeric_code": "41002",
+                 *         "message": "Beta feature not enabled"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description 请求与当前资源状态冲突。 */
         Conflict: {
             headers: {
@@ -1451,7 +4653,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description 服务端内部错误或 provider 链路未映射错误。 */
+        /** @description 服务器处理请求时发生错误。 */
         InternalError: {
             headers: {
                 [name: string]: unknown;
@@ -1480,6 +4682,28 @@ export interface components {
                 };
             };
         };
+        /** @description Provider 授权会话已创建。 */
+        ProviderAuthSessionCreated: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ResponseMeta"] & {
+                    data: components["schemas"]["ProviderAuthSession"];
+                };
+            };
+        };
+        /** @description 当前二维码授权步骤。调用方应根据标准状态区分二维码、验证码、自动验证与 Passkey。 */
+        QRAuthCheckResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ResponseMeta"] & {
+                    data: components["schemas"]["QRAuthCheckData"];
+                };
+            };
+        };
         /** @description 账号运行态动作结果。 */
         RuntimeActionResult: {
             headers: {
@@ -1500,6 +4724,17 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description 验证码授权启动结果；按渠道区分手机号配对与验证码提交。 */
+        StartCodeAuthResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ResponseMeta"] & {
+                    data: components["schemas"]["StartCodeAuthData"];
+                };
+            };
+        };
         /** @description 缺少或无法校验 API Key。 */
         Unauthorized: {
             headers: {
@@ -1509,7 +4744,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description 当前 provider 不支持该能力。 */
+        /** @description 目标账号所属渠道不支持该能力。 */
         UnsupportedByProvider: {
             headers: {
                 [name: string]: unknown;
@@ -1520,26 +4755,32 @@ export interface components {
         };
     };
     parameters: {
-        /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+        /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
         AccountId: string;
-        /** @description provider 侧会话 ID，因可能包含 `@`、`:` 等字符，固定走 query。 */
+        /** @description 账号列表的不透明游标，省略或传入空字符串时读取第一页；续页原样回传上次响应的 data.next_cursor。 仅适用于签发时的 workspace。非法、重复传入或跨 workspace 使用时返回 400 invalid_request（numeric_code=10000）。 */
+        AccountsCursor: string;
+        /** @description 每页最多返回的账号数。省略时为 20；非法值或重复传入时返回 400 invalid_request（numeric_code=10000）。续页可调整此值。 */
+        AccountsLimit: number;
+        /** @description 渠道侧会话标识，部分渠道的标识可能包含 `@`、`:` 等字符。 */
         ConversationIdQuery: string;
-        /** @description 会话类型。 */
+        /** @description 会话类型；按枚举原值精确匹配，不执行去空格或大小写转换。 */
         ConversationType: components["schemas"]["ConversationType"];
-        /** @description 会话类型过滤，支持逗号分隔多选。 */
+        /** @description 会话类型过滤，支持逗号分隔多选；每一项按枚举原值精确匹配，不忽略空项。 可选值为 `user`、`group`、`channel`；非法值返回 400 invalid_conversation_type。 WhatsApp 的 `group` 包含社群公告群，所有群会话的返回类型均为 `group`。 */
         ConversationTypeFilter: string;
-        /** @description 上一次响应返回的 `next_cursor`。 */
+        /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
         Cursor: string;
         /** @description Webhook endpoint public_id，例如 `we_xxx`。 */
         EndpointId: string;
         /** @description API Key public_id，例如 `ak_xxx`。 */
         KeyId: string;
-        /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+        /** @description 每页返回数量。 */
         Limit: number;
-        Provider: components["schemas"]["ProviderName"];
+        Provider: components["schemas"]["ProviderInputName"];
+        /** @description 可选的公开账号 ID，例如 `acc_example`。不可为空、仅含空白或重复出现。 参数名必须精确使用 account_id；大小写变体返回 400 invalid_request，不按省略处理。 列表接口用它筛选账号独立配置；详情、停用、删除接口只校验端点已有账号归属。 */
+        WebhookAccountIdQuery: string;
     };
     requestBodies: {
-        /** @description provider 动作参数。不同 provider 可能支持不同字段；空对象表示不传额外参数。 */
+        /** @description 渠道操作参数。支持的字段因渠道和操作而异；空对象表示不传额外参数。 */
         ActionParams: {
             content: {
                 "application/json": components["schemas"]["FreeFormObject"];
@@ -1566,26 +4807,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listAccounts: {
+    getAccountOperation: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                operation_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description 当前 workspace 下的账号列表。 */
+            /** @description 当前操作状态。 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ResponseMeta"] & {
-                        data: components["schemas"]["Account"][];
+                        data: components["schemas"]["AccountOperation"];
                     };
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            /** @description 操作不存在或不属于当前工作区，account_operation_not_found（20029）。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 钱包服务暂不可用，wallet_unavailable（20028）。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listAccounts: {
+        parameters: {
+            query?: {
+                /** @description 账号列表的不透明游标，省略或传入空字符串时读取第一页；续页原样回传上次响应的 data.next_cursor。 仅适用于签发时的 workspace。非法、重复传入或跨 workspace 使用时返回 400 invalid_request（numeric_code=10000）。 */
+                cursor?: components["parameters"]["AccountsCursor"];
+                /** @description 每页最多返回的账号数。省略时为 20；非法值或重复传入时返回 400 invalid_request（numeric_code=10000）。续页可调整此值。 */
+                limit?: components["parameters"]["AccountsLimit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前 workspace 下的一页账号。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["AccountListResult"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
         };
@@ -1593,13 +4879,16 @@ export interface operations {
     createAccount: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description 可选；提供后在工作区范围内唯一，重试时保持同值和同一请求参数。 */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AccountRequest"];
+                "application/json": components["schemas"]["AccountCreateRequest"];
             };
         };
         responses: {
@@ -1626,7 +4915,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1653,21 +4942,34 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description 删除成功，无响应体。 */
+            /** @description 余额删除已受理且不可撤回；清理或退款仍处理中，重复请求复用原操作。 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["AccountOperation"];
+                    };
+                };
+            };
+            /** @description 账号删除操作达到期望终态，无响应体。 */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
             502: components["responses"]["BadGateway"];
@@ -1678,14 +4980,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AccountRequest"];
+                "application/json": components["schemas"]["AccountUpdateRequest"];
             };
         };
         responses: {
@@ -1704,6 +5006,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
         };
     };
     getAccountAuthState: {
@@ -1711,7 +5014,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1733,12 +5036,32 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    createAccountAuthSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: components["responses"]["ProviderAuthSessionCreated"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
     cancelAccountAuth: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1758,15 +5081,59 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
-        /** @description provider 授权参数。常见字段为 `code`。 */
+        /** @description 渠道授权参数，常见字段为 `code`。 */
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["FreeFormObject"];
+            };
+        };
+        responses: {
+            200: components["responses"]["ActionResult"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    confirmAccountPasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["ActionResult"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    submitAccountPasskeyResponse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyResponseRequest"];
             };
         };
         responses: {
@@ -1783,12 +5150,12 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
-        /** @description provider 授权参数。常见字段为 `password`。 */
+        /** @description 渠道授权参数，常见字段为 `password`。 */
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["FreeFormObject"];
@@ -1808,14 +5175,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
         requestBody?: components["requestBodies"]["ActionParams"];
         responses: {
-            200: components["responses"]["ActionResult"];
+            200: components["responses"]["QRAuthCheckResult"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
@@ -1828,7 +5195,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1848,15 +5215,15 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
-        /** @description provider 授权参数。常见字段为 `session_url`。 */
+        /** @description 渠道会话授权参数。Telegram、Twitter 等既有 provider 可继续使用 `session_url` 或其已支持的自由字段；`whatsapp-protocol` 的协议凭证必须放入同名嵌套对象。 账号定位、webhook 与代理由平台注入，不应在此提交。 */
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["FreeFormObject"];
+                "application/json": components["schemas"]["SessionImportRequest"];
             };
         };
         responses: {
@@ -1873,14 +5240,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
         };
         requestBody?: components["requestBodies"]["ActionParams"];
         responses: {
-            200: components["responses"]["ActionResult"];
+            200: components["responses"]["StartCodeAuthResult"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
@@ -1891,18 +5258,18 @@ export interface operations {
     listContacts: {
         parameters: {
             query?: {
-                /** @description 上一次响应返回的 `next_cursor`。 */
+                /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
                 cursor?: components["parameters"]["Cursor"];
-                /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+                /** @description 每页返回数量。 */
                 limit?: components["parameters"]["Limit"];
                 /** @description 关键字过滤。 */
                 q?: string;
-                /** @description RFC3339 时间戳，只返回此时间后更新的联系人；provider 不支持时可能退化为全量。 */
+                /** @description RFC3339 时间戳，只返回此时间后更新的联系人；渠道不支持增量过滤时可能返回全量结果。 */
                 updated_since?: string;
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1928,12 +5295,81 @@ export interface operations {
             502: components["responses"]["BadGateway"];
         };
     };
+    createContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "phone_number": "8613800000000",
+                 *       "username": "alice_user",
+                 *       "whatsapp_options": {
+                 *         "first_name": "Alice",
+                 *         "full_name": "Alice Example",
+                 *         "sync_to_device_contacts": false
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ContactCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description 添加成功后的联系人信息。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "995f30b6308a67d6",
+                     *       "data": {
+                     *         "id": "8613800000000@s.whatsapp.net",
+                     *         "conversation_id": "123456789012345@lid",
+                     *         "display_name": "Alice Example",
+                     *         "avatar_url": "",
+                     *         "provider_user_id": "8613800000000@s.whatsapp.net",
+                     *         "extra": {
+                     *           "phone": "8613800000000"
+                     *         }
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["Contact"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            /** @description 添加联系人失败；whatsapp 目标号码未被识别为有效联系人时，numeric_code=35009，保持 code=create_contact_failed，并保留完整原始原因。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
     blockContact: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1955,7 +5391,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -1983,12 +5419,12 @@ export interface operations {
     getContact: {
         parameters: {
             query: {
-                /** @description provider 侧联系人 ID，因可能包含 `@` 等字符，固定走 query。 */
+                /** @description 渠道侧联系人标识，按不透明字符串传递。`whatsapp` 和 `whatsapp-protocol` 统一使用 LID（`xxx@lid`）；`whatsapp-protocol` 联系人资料字段缺失时仍可能返回成功， 调用方应以实际返回字段为准。 */
                 contact_id: string;
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2010,6 +5446,68 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            /** @description 请求参数有效，但目标会话不存在。 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_xxx",
+                     *       "error": {
+                     *         "code": "contact_not_found",
+                     *         "numeric_code": "35000",
+                     *         "message": "Conversation not found"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    getContactMembership: {
+        parameters: {
+            query: {
+                /** @description 联系人标识。WhatsApp 账号请使用联系人接口返回的 LID，例如 `123456789012345@lid`。 */
+                contact_id: string;
+            };
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 联系人列表归属状态。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "995f30b6308a67d6",
+                     *       "data": {
+                     *         "contact_id": "123456789012345@lid",
+                     *         "is_in_contacts": true
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["ContactMembership"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
             501: components["responses"]["UnsupportedByProvider"];
             502: components["responses"]["BadGateway"];
@@ -2020,7 +5518,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2046,7 +5544,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2066,18 +5564,18 @@ export interface operations {
     listConversations: {
         parameters: {
             query?: {
-                /** @description 上一次响应返回的 `next_cursor`。 */
+                /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
                 cursor?: components["parameters"]["Cursor"];
-                /** @description 按会话标签过滤。 */
+                /** @description WhatsApp 会话标签 ID；未提供时返回“特别关注”会话。 */
                 label_id?: string;
-                /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+                /** @description 每页返回数量。 */
                 limit?: components["parameters"]["Limit"];
-                /** @description 会话类型过滤，支持逗号分隔多选。 */
+                /** @description 会话类型过滤，支持逗号分隔多选；每一项按枚举原值精确匹配，不忽略空项。 可选值为 `user`、`group`、`channel`；非法值返回 400 invalid_conversation_type。 WhatsApp 的 `group` 包含社群公告群，所有群会话的返回类型均为 `group`。 */
                 type?: components["parameters"]["ConversationTypeFilter"];
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2103,17 +5601,108 @@ export interface operations {
             502: components["responses"]["BadGateway"];
         };
     };
+    requestConversationHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "conversation_id": "100000000000002@lid",
+                 *       "before": {
+                 *         "message_id": "MSG_HISTORY_ANCHOR_001",
+                 *         "sent_at": "2026-09-28T03:00:00Z",
+                 *         "direction": "inbound"
+                 *       },
+                 *       "limit": 50
+                 *     }
+                 */
+                "application/json": components["schemas"]["ConversationHistoryRequest"];
+            };
+        };
+        responses: {
+            /** @description 补拉请求已受理，等待可用历史批次；不代表已收到消息或补拉完成。 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_history_example_001",
+                     *       "data": {
+                     *         "status": "accepted",
+                     *         "conversation_id": "100000000000002@lid",
+                     *         "limit": 50
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["ConversationHistoryAccepted"];
+                    };
+                };
+            };
+            /** @description 参数缺失或非法；invalid_request 表示请求字段或账号路径校验失败，provider_invalid_request 表示渠道参数无效（包括使用合成通话记录 ID 作为锚点），unsupported_conversation_type 表示会话类型不支持。 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description 账号路径格式有效，但账号不存在或不属于当前工作空间，code 为 account_not_found，numeric_code 为 20020。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_history_account_missing",
+                     *       "error": {
+                     *         "code": "account_not_found",
+                     *         "numeric_code": "20020",
+                     *         "message": "Account not found"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            /** @description 发生未分类的内部错误，code 为 request_conversation_history_failed，numeric_code 为 37016。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
     getConversation: {
         parameters: {
             query: {
-                /** @description provider 侧会话 ID，因可能包含 `@`、`:` 等字符，固定走 query。 */
+                /** @description 渠道侧会话标识，部分渠道的标识可能包含 `@`、`:` 等字符。 */
                 conversation_id: components["parameters"]["ConversationIdQuery"];
-                /** @description 会话类型。 */
+                /** @description 会话类型；按枚举原值精确匹配，不执行去空格或大小写转换。 */
                 type?: components["parameters"]["ConversationType"];
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2133,7 +5722,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
+            /** @description 会话不存在或当前账号无法访问目标群；群不存在与未参与群通过细分数字码区分。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
             501: components["responses"]["UnsupportedByProvider"];
@@ -2143,14 +5740,14 @@ export interface operations {
     listConversationLabels: {
         parameters: {
             query?: {
-                /** @description 上一次响应返回的 `next_cursor`。 */
+                /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
                 cursor?: components["parameters"]["Cursor"];
-                /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+                /** @description 每页返回数量。 */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2181,7 +5778,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2216,7 +5813,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2251,7 +5848,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2284,18 +5881,18 @@ export interface operations {
     listConversationMembers: {
         parameters: {
             query: {
-                /** @description provider 侧会话 ID，因可能包含 `@`、`:` 等字符，固定走 query。 */
+                /** @description 渠道侧会话标识，部分渠道的标识可能包含 `@`、`:` 等字符。 */
                 conversation_id: components["parameters"]["ConversationIdQuery"];
-                /** @description 上一次响应返回的 `next_cursor`。 */
+                /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
                 cursor?: components["parameters"]["Cursor"];
-                /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+                /** @description 每页返回数量。 */
                 limit?: components["parameters"]["Limit"];
-                /** @description 会话类型。 */
+                /** @description 会话类型；按枚举原值精确匹配，不执行去空格或大小写转换。 */
                 type?: components["parameters"]["ConversationType"];
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2327,7 +5924,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2353,7 +5950,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2375,7 +5972,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2387,7 +5984,15 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["OkResult"];
-            400: components["responses"]["BadRequest"];
+            /** @description 请求字段或当前渠道的已读目标无效时返回 invalid_request（10000）；渠道拒绝参数时返回 provider_invalid_request（30001）。 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
@@ -2401,7 +6006,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2423,7 +6028,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2445,7 +6050,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2465,14 +6070,14 @@ export interface operations {
     listGroups: {
         parameters: {
             query?: {
-                /** @description 上一次响应返回的 `next_cursor`。 */
+                /** @description Provider 不透明游标，应原样回传上一次响应的 `next_cursor`。 伪造、失效或跨查询复用的 cursor 可能被 Provider 忽略、重置为第一页，或返回 Provider 错误；客户端不得依赖统一的 400 行为。 */
                 cursor?: components["parameters"]["Cursor"];
-                /** @description 每页数量；未提供时的默认值可能因 provider 而异。 */
+                /** @description 每页返回数量。 */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2490,6 +6095,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
@@ -2502,7 +6108,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2535,12 +6141,12 @@ export interface operations {
     getGroup: {
         parameters: {
             query: {
-                /** @description provider 侧群 ID，因可能包含 `@` 等字符，固定走 query。 */
+                /** @description 渠道侧群组标识，部分渠道的标识可能包含 `@` 等字符。 */
                 group_id: string;
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2570,12 +6176,12 @@ export interface operations {
     getGroupInviteCode: {
         parameters: {
             query: {
-                /** @description provider 侧群 ID。 */
+                /** @description 渠道侧群组标识。 */
                 group_id: string;
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2607,7 +6213,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2631,12 +6237,12 @@ export interface operations {
     listGroupJoinRequests: {
         parameters: {
             query: {
-                /** @description provider 侧群 ID。 */
+                /** @description 渠道侧群组标识。 */
                 group_id: string;
             };
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2668,7 +6274,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2694,7 +6300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2716,7 +6322,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2742,7 +6348,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2763,12 +6369,198 @@ export interface operations {
             502: components["responses"]["BadGateway"];
         };
     };
+    listPosts: {
+        parameters: {
+            query?: {
+                /** @description 原样传回上一页的 next_cursor；首次请求省略。 */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 列出本账号帖子结果。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["PostListResult"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 账号不存在或不属于当前工作空间时返回 account_not_found（20020）。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    listPostComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostCommentListRequest"];
+            };
+        };
+        responses: {
+            /** @description 列出帖子的一级评论结果。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["PostCommentListResult"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 账号不存在或不属于当前工作空间时返回 account_not_found（20020）。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    replyPostComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostCommentReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description 发布一级评论或回复一级评论的接受结果。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["PostCommentReplyResult"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 账号不存在或不属于当前工作空间时返回 account_not_found（20020）。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
+    getPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
+                account_id: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "post_id": "7500000000000000101"
+                 *     }
+                 */
+                "application/json": components["schemas"]["PostInfoRequest"];
+            };
+        };
+        responses: {
+            /** @description 目标帖子详情。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["Post"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 当前账号无法访问目标帖子（post_inaccessible，39005）；不代表帖子不存在，也不指明具体拒绝原因。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 账号不在当前工作空间（account_not_found，20020）；可靠确认帖子不存在时返回 post_not_found（39000）。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+        };
+    };
     reconnectAccountRuntime: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2788,7 +6580,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2808,7 +6600,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2828,7 +6620,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Device API 签发的账号 public_id，例如 `acc_xxx`。 */
+                /** @description device-api 签发的账号 public_id，例如 `acc_xxx`。 */
                 account_id: components["parameters"]["AccountId"];
             };
             cookie?: never;
@@ -2957,6 +6749,312 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    createCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "account_id": "acc_example",
+                 *       "to": {
+                 *         "id": "100000000000002@lid",
+                 *         "type": "user"
+                 *       },
+                 *       "media_type": "video"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreateCallRequest"];
+            };
+        };
+        responses: {
+            /** @description 已生成准备态通话，尚未拨号。 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "data": {
+                     *         "call_id": "call_example",
+                     *         "direction": "outbound",
+                     *         "media_type": "video",
+                     *         "state": "preparing",
+                     *         "join_url": "https://calls.example.com/call/call_example#ticket=example-only",
+                     *         "expires_at": "2026-09-07T12:02:00Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["CreateCallData"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 目标工作区未开通内测时返回 beta_feature_not_enabled（41002）；当前 API Key 无权切换到目标工作区时仍返回原鉴权错误。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "beta_feature_not_enabled",
+                     *         "numeric_code": "41002",
+                     *         "message": "Beta feature not enabled"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description 账号已有活跃通话、尚未绑定节点或当前运行实例未就绪；遇到 38000 可先查询 GET /v1/calls/active，再按需调用 POST /v1/calls/{call_id}/hangup；也可等待当前通话结束或准备过期后重试。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 通话准备失败或发生内部处理错误。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "create_call_failed",
+                     *         "numeric_code": "38002",
+                     *         "message": "Failed to create call"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+            /** @description 通话服务当前不可用，稍后重试；未知渠道故障仍使用既有 502 分类。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "call_service_unavailable",
+                     *         "numeric_code": "38001",
+                     *         "message": "Call service unavailable"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    hangupCall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example call_example */
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "account_id": "acc_example"
+                 *     }
+                 */
+                "application/json": {
+                    account_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 已结束通话的终态对象。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "data": {
+                     *         "call_id": "call_example",
+                     *         "state": "ended",
+                     *         "direction": "outbound",
+                     *         "media_type": "voice"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["EndedCallData"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 目标工作区未开通内测时返回 beta_feature_not_enabled（41002）；当前 API Key 无权访问目标工作区时仍返回原鉴权错误。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "beta_feature_not_enabled",
+                     *         "numeric_code": "41002",
+                     *         "message": "Beta feature not enabled"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 通话不存在或不属于该账号，错误码 call_not_found / 38003；账号不存在仍沿用 account_not_found。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "call_not_found",
+                     *         "numeric_code": "38003",
+                     *         "message": "Call not found"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            /** @description 通话挂断失败，错误码 call_control_failed / 38004。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+            /** @description 通话服务不可用，错误码 call_service_unavailable / 38001。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    getActiveCall: {
+        parameters: {
+            query: {
+                /** @example acc_example */
+                account_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前活动通话或空对象 {}。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseMeta"] & {
+                        data: components["schemas"]["ActiveCallData"] | Record<string, never>;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description 目标工作区未开通内测时返回 beta_feature_not_enabled（41002）；当前 API Key 无权访问目标工作区时仍返回原鉴权错误。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "beta_feature_not_enabled",
+                     *         "numeric_code": "41002",
+                     *         "message": "Beta feature not enabled"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description 通话查询失败，错误码 call_control_failed / 38004。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "request_id": "req_example",
+                     *       "error": {
+                     *         "code": "call_control_failed",
+                     *         "numeric_code": "38004",
+                     *         "message": "Failed to control call"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            501: components["responses"]["UnsupportedByProvider"];
+            502: components["responses"]["BadGateway"];
+            /** @description 通话服务不可用，错误码 call_service_unavailable / 38001。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     sendMessage: {
         parameters: {
             query?: never;
@@ -2981,12 +7079,36 @@ export interface operations {
                     };
                 };
             };
-            400: components["responses"]["BadRequest"];
+            /** @description 请求体或参数非法；贴纸素材校验失败使用 provider_invalid_request 和 numeric_code=36007，message 提供具体原因，贴纸尚未发送。 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
-            500: components["responses"]["InternalError"];
+            /** @description 发送消息时发生内部错误；贴纸素材下载、存储或其他准备失败保留 send_message_failed 和 numeric_code=36001，message 提供具体原因，缺失时沿用默认提示。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             501: components["responses"]["UnsupportedByProvider"];
-            502: components["responses"]["BadGateway"];
+            /** @description 渠道发送失败或暂不可用；numeric_code=20102 表示 whatsapp 账号受限，30020 表示 whatsapp-protocol 账号登录受限，30019 表示平台限制发送，34012 表示 whatsapp 群消息发送需要管理员权限，均不应自动重试；34012 应先核实群权限和账号角色，由管理员调整后再发送；30021 表示连接未建立，应先刷新账号状态；30010 附带可用的原始错误原因。 */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     editMessage: {
@@ -3088,7 +7210,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description provider 支持的 region 及是否可分配。 */
+            /** @description 渠道支持的 `region` 及其可分配状态。 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3106,7 +7228,10 @@ export interface operations {
     };
     listWebhookEndpoints: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 可选的公开账号 ID，例如 `acc_example`。不可为空、仅含空白或重复出现。 参数名必须精确使用 account_id；大小写变体返回 400 invalid_request，不按省略处理。 列表接口用它筛选账号独立配置；详情、停用、删除接口只校验端点已有账号归属。 */
+                account_id?: components["parameters"]["WebhookAccountIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3124,7 +7249,9 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -3154,11 +7281,17 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["BetaFeatureNotEnabled"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AccountWebhookAlreadyExists"];
         };
     };
     getWebhookEndpoint: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 可选的公开账号 ID，例如 `acc_example`。不可为空、仅含空白或重复出现。 参数名必须精确使用 account_id；大小写变体返回 400 invalid_request，不按省略处理。 列表接口用它筛选账号独立配置；详情、停用、删除接口只校验端点已有账号归属。 */
+                account_id?: components["parameters"]["WebhookAccountIdQuery"];
+            };
             header?: never;
             path: {
                 /** @description Webhook endpoint public_id，例如 `we_xxx`。 */
@@ -3179,13 +7312,18 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };
     deleteWebhookEndpoint: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 可选的公开账号 ID，例如 `acc_example`。不可为空、仅含空白或重复出现。 参数名必须精确使用 account_id；大小写变体返回 400 invalid_request，不按省略处理。 列表接口用它筛选账号独立配置；详情、停用、删除接口只校验端点已有账号归属。 */
+                account_id?: components["parameters"]["WebhookAccountIdQuery"];
+            };
             header?: never;
             path: {
                 /** @description Webhook endpoint public_id，例如 `we_xxx`。 */
@@ -3204,6 +7342,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     updateWebhookEndpoint: {
@@ -3235,11 +7374,17 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["BetaFeatureNotEnabled"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["AccountWebhookAlreadyExists"];
         };
     };
     deactivateWebhookEndpoint: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 可选的公开账号 ID，例如 `acc_example`。不可为空、仅含空白或重复出现。 参数名必须精确使用 account_id；大小写变体返回 400 invalid_request，不按省略处理。 列表接口用它筛选账号独立配置；详情、停用、删除接口只校验端点已有账号归属。 */
+                account_id?: components["parameters"]["WebhookAccountIdQuery"];
+            };
             header?: never;
             path: {
                 /** @description Webhook endpoint public_id，例如 `we_xxx`。 */
@@ -3262,6 +7407,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     getWorkspace: {
@@ -3315,6 +7461,822 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    receiveAccountAuthFailedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsAppAccountAuthFailedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件；账号失败不代表回调投递失败。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveAccountProfileUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountProfileUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收事件。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveAccountStartedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountStartedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收事件。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveCallAnsweredWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallAnsweredWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收事件。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveCallEndedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallEndedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收事件。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveCallIncomingWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallIncomingWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收事件。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveCallMessageReceivedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallMessageReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveCallMessageUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallMessageUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件；通话状态更新不是回调投递失败。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveContactUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 已接收事件。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveConversationDisappearingMessagesUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationDisappearingMessagesUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveConversationHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已可靠接收本次事件，重复投递也应幂等接受；不表示全部历史已完成。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveGroupSettingsUpdatedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupSettingsUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageCommerceHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCommerceHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageCommerceReceivedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCommerceReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageCommerceUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageCommerceUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageContactCardsHistoryWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageContactCardsHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageContactCardsReceivedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageContactCardsReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageContactCardsUpdatedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageContactCardsUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageDeviceIdentityWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "id": "evt_example_174750",
+                 *       "type": "message.received",
+                 *       "provider": "whatsapp",
+                 *       "account_id": "acc_example_001",
+                 *       "occurred_at": "2026-09-23T08:00:00Z",
+                 *       "data": {
+                 *         "conversation": {
+                 *           "id": "100000000000002@lid",
+                 *           "type": "user"
+                 *         },
+                 *         "sender": {
+                 *           "id": "100000000000001@lid",
+                 *           "device_id": 8
+                 *         },
+                 *         "message": {
+                 *           "id": "wa_message_example_001",
+                 *           "direction": "outbound",
+                 *           "text": "Example"
+                 *         }
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["WhatsAppMessageDeviceWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 接收成功。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageInteractiveHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageInteractiveHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageInteractiveReceivedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageInteractiveReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageInteractiveUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageInteractiveUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLinkPreviewHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLinkPreviewHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLinkPreviewReceivedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLinkPreviewReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLinkPreviewUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLinkPreviewUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLiveLocationHistoryWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLiveLocationHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLiveLocationReceivedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLiveLocationReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageLiveLocationUpdatedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageLiveLocationUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessagePinUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagePinUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessagePollHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagePollHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 回调已接收。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessagePollReceivedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagePollReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 回调已接收。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessagePollVoteUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagePollVoteUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 回调已接收。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageReferralHistoryWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageReferralHistoryWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该批次，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageReferralWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageReferralReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveMessageReferralUpdatedWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageReferralUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 业务方已接收并接受处理该编辑事件，重复投递也应幂等接受。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receivePostCommentCreatedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostCommentCreatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description 已接收。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
 }

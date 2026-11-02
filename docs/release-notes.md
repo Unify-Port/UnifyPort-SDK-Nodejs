@@ -2,6 +2,21 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
+## Unreleased - public contract synchronization
+
+The working source covers 78 HTTP operations and 24 standard event types, plus the subscription wildcard. No version, tag or registry release is created.
+
+- Adds calls, billing-operation queries, hosted authorization, Passkey, posts/comments, on-demand history and contact creation/membership.
+- Account lists now return `data.items/has_more/next_cursor`. Migrate array consumers and preserve opaque cursors. Creation/update use separate inputs. Optional `Idempotency-Key` is passed through `params.header`; writes remain nonretryable. Deletion returns 202 JSON or 204 with undefined data.
+- Telegram read targets no longer require a WhatsApp sender. Types cover authorization steps, runtime hints, wallet periods, quota usage, independent account endpoints and WhatsApp Protocol.
+- Optional `UnifyPortApiError.numericCode` retains only validated five-digit strings. Raw messages/details remain excluded.
+- Message unions cover sticker/poll/link_preview and member/all mentions. See [Webhook handling](webhook-contract.md) for payloads, sparse updates and ordering.
+- New operations remain outside MCP and automatic retry. POST post/comment queries are reads; hangup is destructive. Authorization/call links and Passkey payloads have secret policies.
+- Compatibility review keeps `DeviceApiOperations` and the `/device` `operations` export HTTP-only. Webhook receiver operations remain available through `DeviceApiWebhooks` / `/device` `webhooks`.
+- Generated types preserve shared fields in alternative payloads, decoded/unavailable vote branches, disabled settings, unpinned snapshots and sparse call-record fields. Webhook examples are now included in generated TypeScript checks.
+
+Account pagination is a breaking response change. Replace the removed `AccountRequest` component with `AccountCreateRequest` or `AccountUpdateRequest` as appropriate. Required creation fields and corrected message/Webhook unions may expose invalid existing calls during type checking. Migrate callers before adopting this source update. Local checks do not prove deployment or real-account workflows.
+
 ## 0.4.0 - 2026-07-31
 
 ### Provider profiles and message reply handles

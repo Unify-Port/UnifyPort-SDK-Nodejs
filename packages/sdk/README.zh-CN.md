@@ -115,10 +115,13 @@ const workspace = await device.getWorkspace();
 console.log(workspace.data.data);
 
 const accounts = await device.listAccounts();
-for (const account of accounts.data.data) {
+for (const account of accounts.data.data.items) {
   console.log(account.id, account.provider, account.status);
 }
 ```
+
+这里只读取第一页，默认 20 个账号。`accounts.data.data.has_more` 为 true 时，
+将 `accounts.data.data.next_cursor` 原样传入 `params.query.cursor`，或使用 `paginateCursor`。
 
 ### Path 参数
 
@@ -238,6 +241,9 @@ for await (const contact of paginateCursor(
 
 ## 错误处理
 
+`UnifyPortApiError.numericCode` 是从 `error.numeric_code` 读取并验证的可选五位数字字符串，
+旧响应可能缺失。按错误码分支，不依赖原始 message 文案。
+
 所有公开错误都继承 `UnifyPortError`。建议只记录经过筛选的 `status`、`code`、`requestId`、`api` 和
 `operationId`，不要直接序列化完整错误、请求、响应或 header。
 
@@ -251,6 +257,7 @@ try {
     console.error({
       status: error.status,
       code: error.code,
+      numericCode: error.numericCode,
       requestId: error.requestId,
       operationId: error.operationId
     });

@@ -2,6 +2,21 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
+## 未发布 - 公开契约同步
+
+当前工作源码覆盖 78 个 HTTP 操作、24 种标准事件及订阅通配符。不创建版本、tag 或 Registry 发布。
+
+- 新增通话、计费操作查询、托管授权、Passkey、帖子及评论、按需历史、联系人添加及归属查询。
+- 账号列表改为 `data.items/has_more/next_cursor`，旧数组消费代码须迁移，游标原样传回。创建与更新使用独立输入。通过 `params.header` 传可选 `Idempotency-Key`，写操作仍不自动重试。删除可返回 202 JSON 或 204 空体，后者 data 为 undefined。
+- Telegram 已读不再强制携带 WhatsApp sender。同步授权步骤、运行提示、计费周期、额度使用量、账号独立端点及 WhatsApp Protocol 类型。
+- 可选 `UnifyPortApiError.numericCode` 仅保留验证通过的五位数字字符串，不暴露原始 message/details。
+- 消息联合类型支持 sticker/poll/link_preview 和 member/all 提及。载荷、稀疏合并与排序见 [Webhook 处理](webhook-contract.md)。
+- 新增操作不进入 MCP、不自动重试；POST 帖子及评论查询为 read，挂断为 destructive，授权/通话链接与 Passkey 载荷采用敏感策略。
+- 兼容性复查保证 `DeviceApiOperations` 和 `/device` 的 `operations` 导出只含 HTTP 操作；Webhook 接收操作通过 `DeviceApiWebhooks` 或 `/device` 的 `webhooks` 获取。
+- 生成类型保留候选载荷的共同字段、decoded/unavailable 投票分支、关闭的限时设置、取消置顶和通话稀疏更新规则。Webhook 示例也进入生成的 TypeScript 检查。
+
+账号分页属于响应结构破坏性变化。原 `AccountRequest` 组件应按用途替换为 `AccountCreateRequest` 或 `AccountUpdateRequest`。创建必填字段及修正后的消息/Webhook 联合类型可能在编译期暴露旧调用的非法参数。采用前迁移调用代码。本地检查不证明部署或真实账号流程。
+
 ## 0.4.0 - 2026-07-31
 
 ### Provider 账号资料与消息引用句柄

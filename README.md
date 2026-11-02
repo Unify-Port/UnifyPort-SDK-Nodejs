@@ -9,6 +9,8 @@ stdio MCP server, and public skills that automation agents can reuse.
 remains `private: true` and is not published to a registry until a separate MCP release policy is
 defined.
 
+The working source covers 78 HTTP operations and 24 standard Webhook event types. These changes are unreleased; the existing npm version does not include them. See [migration notes](docs/release-notes.md) and [Webhook handling](docs/webhook-contract.md).
+
 ## Capabilities and boundaries
 
 | Asset                   | Purpose                                             | Key boundary                                |

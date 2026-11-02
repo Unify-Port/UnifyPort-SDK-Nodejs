@@ -6,12 +6,14 @@
 
 [Back to the API Reference index](README.md)
 
-Provider contact views and contact actions.
+Query and manage contacts.
 
 ## Operations on this page
 
 - [`blockContact`](#block-contact): Block a contact
+- [`createContact`](#create-contact): Add a contact
 - [`getContact`](#get-contact): Get contact details
+- [`getContactMembership`](#get-contact-membership): Check contact-list membership
 - [`listContactBlocklist`](#list-contact-blocklist): List blocked contacts
 - [`listContacts`](#list-contacts): List contacts
 - [`setContactNote`](#set-contact-note): Set or clear a contact note
@@ -36,30 +38,30 @@ Block a contact
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
 JSON request body.
 
-| Field             | Required | Type     | Constraints | Description |
-| ----------------- | -------- | -------- | ----------- | ----------- |
-| `body.contact_id` | Yes      | `string` | -           | -           |
+| Field             | Required | Type     | Constraints | Description                                                                    |
+| ----------------- | -------- | -------- | ----------- | ------------------------------------------------------------------------------ |
+| `body.contact_id` | Yes      | `string` | -           | Channel contact ID. WhatsApp block/unblock requires a numeric @lid identifier. |
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                   |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                      |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -82,7 +84,103 @@ const result = await device.blockContact({
     }
   },
   body: {
-    contact_id: "contact_xxx"
+    contact_id: "123456789012345@lid"
+  }
+});
+console.log(result.data.data);
+```
+
+---
+
+<a id="create-contact"></a>
+
+## `createContact`
+
+Add a contact
+
+Add a contact through the account's channel. Provide phone_number or username; whatsapp_options is WhatsApp-only. numeric_code 30017 indicates throttling; back off. 30018 indicates App State desynchronization; wait for recovery. Both retain existing HTTP/code classifications. A WhatsApp number not recognized as a valid contact returns HTTP 500 create_contact_failed / 35009, with the available original reason or a default explanation. Ask the user to verify country code, number and WhatsApp registration before retrying; do not loop. This does not establish permanent unavailability or lack of registration. Other failures retain their classifications.
+
+| Property        | Value                                                                     |
+| --------------- | ------------------------------------------------------------------------- |
+| HTTP            | `POST` `/v1/accounts/{account_id}/contacts/add`                           |
+| SDK method      | `device.createContact(request, execution?)`                               |
+| SDK return type | `Promise<ApiResult<OperationData<DeviceApiOperations["createContact"]>>>` |
+| Authentication  | `X-Api-Key` (injected by the client)                                      |
+| Mutability      | `write`                                                                   |
+| Automatic retry | No automatic retries                                                      |
+
+### Parameters
+
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
+
+### Request body
+
+JSON request body.
+
+| Field                                           | Required | Type                           | Constraints   | Description                                                                          |
+| ----------------------------------------------- | -------- | ------------------------------ | ------------- | ------------------------------------------------------------------------------------ |
+| `body.phone_number`                             | No       | `string`                       | minLength=1   | Digits-only phone including country/region code, without plus, spaces or separators. |
+| `body.username`                                 | No       | `string`                       | minLength=1   | Channel username in the channel's required format.                                   |
+| `body.whatsapp_options`                         | No       | `WhatsAppContactCreateOptions` | -             | -                                                                                    |
+| `body.whatsapp_options.first_name`              | No       | `string`                       | -             | -                                                                                    |
+| `body.whatsapp_options.full_name`               | No       | `string`                       | -             | -                                                                                    |
+| `body.whatsapp_options.sync_to_device_contacts` | No       | `boolean`                      | default=false | Whether to synchronize to linked WhatsApp devices' system address books.             |
+
+### Responses
+
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Contact returned after successful creation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Contact creation failed. An unrecognized WhatsApp number uses create_contact_failed / 35009 with its available original reason.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
+
+The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
+
+Success status `200` response fields:
+
+| Field                                   | Present | Type           | Constraints | Description                                                                                                                                                                     |
+| --------------------------------------- | ------- | -------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`                | No      | `string`       | -           | The request ID generated by the server.                                                                                                                                         |
+| `result.data.client_request_id`         | No      | `string`       | -           | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                          |
+| `result.data.data`                      | Yes     | `Contact`      | -           | -                                                                                                                                                                               |
+| `result.data.data.id`                   | Yes     | `string`       | -           | Contact identifier.                                                                                                                                                             |
+| `result.data.data.conversation_id`      | Yes     | `string`       | -           | Opaque messaging or conversation identifier.                                                                                                                                    |
+| `result.data.data.display_name`         | Yes     | `string`       | -           | -                                                                                                                                                                               |
+| `result.data.data.avatar_url`           | Yes     | `string`       | -           | -                                                                                                                                                                               |
+| `result.data.data.provider_user_id`     | Yes     | `string`       | -           | Opaque channel user identifier.                                                                                                                                                 |
+| `result.data.data.is_blocked`           | No      | `boolean`      | -           | -                                                                                                                                                                               |
+| `result.data.data.extra`                | No      | `ContactExtra` | -           | Channel contact extensions, only when reliable values are available.                                                                                                            |
+| `result.data.data.extra.phone`          | No      | `string`       | -           | Plain phone parsed from a WhatsApp phone JID.                                                                                                                                   |
+| `result.data.data.extra.first_name`     | No      | `string`       | -           | Saved short/first contact name in this account's address book.                                                                                                                  |
+| `result.data.data.extra.full_name`      | No      | `string`       | -           | Saved full contact name in this account's address book.                                                                                                                         |
+| `result.data.data.extra.push_name`      | No      | `string`       | -           | Contact's self-configured WhatsApp personal name.                                                                                                                               |
+| `result.data.data.extra.username`       | No      | `string`       | minLength=1 | WhatsApp contact username, independent of push_name. Returned only when a nonempty value is known. Absence is unknown, not proof of no username and not a clearing instruction. |
+| `result.data.data.extra.business_name`  | No      | `string`       | -           | WhatsApp Business or verified name.                                                                                                                                             |
+| `result.data.data.extra.redacted_phone` | No      | `string`       | -           | Masked phone when only partial digits are available.                                                                                                                            |
+
+### TypeScript example
+
+```ts
+const result = await device.createContact({
+  params: {
+    path: {
+      account_id: "acc_xxx"
+    }
+  },
+  body: {
+    phone_number: "8613800000000",
+    username: "alice_user",
+    whatsapp_options: {
+      first_name: "Alice",
+      full_name: "Alice Example",
+      sync_to_device_contacts: false
+    }
   }
 });
 console.log(result.data.data);
@@ -107,10 +205,10 @@ Get contact details
 
 ### Parameters
 
-| SDK field                 | Location | Required | Type     | Example         | Constraints | Description                                                                                                            |
-| ------------------------- | -------- | -------- | -------- | --------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `params.path.account_id`  | path     | Yes      | `string` | `"acc_xxx"`     | -           | The account `public_id` issued by the Device API, for example `acc_xxx`.                                               |
-| `params.query.contact_id` | query    | Yes      | `string` | `"contact_xxx"` | -           | The provider-side contact ID. Because it may contain characters such as `@`, it is always passed as a query parameter. |
+| SDK field                 | Location | Required | Type     | Example         | Constraints | Description                                                                                                                                                        |
+| ------------------------- | -------- | -------- | -------- | --------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.path.account_id`  | path     | Yes      | `string` | `"acc_xxx"`     | -           | Public account ID issued by the API, for example acc_example.                                                                                                      |
+| `params.query.contact_id` | query    | Yes      | `string` | `"contact_xxx"` | -           | Opaque channel contact ID. whatsapp and whatsapp-protocol use LID (xxx@lid). Successful whatsapp-protocol detail can omit profile fields; use the actual response. |
 
 ### Request body
 
@@ -118,38 +216,116 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | Contact details.                                                           |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                      |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Contact details.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `422`       | `application/json` | `ErrorEnvelope`         | Request valid, but the target conversation does not exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                               | Present | Type             | Constraints | Description                                                            |
-| ----------------------------------- | ------- | ---------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`            | No      | `string`         | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`     | No      | `string`         | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                  | Yes     | `Contact`        | -           | -                                                                      |
-| `result.data.data.id`               | Yes     | `string`         | -           | -                                                                      |
-| `result.data.data.conversation_id`  | Yes     | `string`         | -           | -                                                                      |
-| `result.data.data.display_name`     | Yes     | `string`         | -           | -                                                                      |
-| `result.data.data.avatar_url`       | Yes     | `string`         | -           | -                                                                      |
-| `result.data.data.provider_user_id` | Yes     | `string`         | -           | -                                                                      |
-| `result.data.data.is_blocked`       | No      | `boolean`        | -           | -                                                                      |
-| `result.data.data.extra`            | No      | `FreeFormObject` | -           | -                                                                      |
+| Field                                   | Present | Type           | Constraints | Description                                                                                                                                                                     |
+| --------------------------------------- | ------- | -------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`                | No      | `string`       | -           | The request ID generated by the server.                                                                                                                                         |
+| `result.data.client_request_id`         | No      | `string`       | -           | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                          |
+| `result.data.data`                      | Yes     | `Contact`      | -           | -                                                                                                                                                                               |
+| `result.data.data.id`                   | Yes     | `string`       | -           | Contact identifier.                                                                                                                                                             |
+| `result.data.data.conversation_id`      | Yes     | `string`       | -           | Opaque messaging or conversation identifier.                                                                                                                                    |
+| `result.data.data.display_name`         | Yes     | `string`       | -           | -                                                                                                                                                                               |
+| `result.data.data.avatar_url`           | Yes     | `string`       | -           | -                                                                                                                                                                               |
+| `result.data.data.provider_user_id`     | Yes     | `string`       | -           | Opaque channel user identifier.                                                                                                                                                 |
+| `result.data.data.is_blocked`           | No      | `boolean`      | -           | -                                                                                                                                                                               |
+| `result.data.data.extra`                | No      | `ContactExtra` | -           | Channel contact extensions, only when reliable values are available.                                                                                                            |
+| `result.data.data.extra.phone`          | No      | `string`       | -           | Plain phone parsed from a WhatsApp phone JID.                                                                                                                                   |
+| `result.data.data.extra.first_name`     | No      | `string`       | -           | Saved short/first contact name in this account's address book.                                                                                                                  |
+| `result.data.data.extra.full_name`      | No      | `string`       | -           | Saved full contact name in this account's address book.                                                                                                                         |
+| `result.data.data.extra.push_name`      | No      | `string`       | -           | Contact's self-configured WhatsApp personal name.                                                                                                                               |
+| `result.data.data.extra.username`       | No      | `string`       | minLength=1 | WhatsApp contact username, independent of push_name. Returned only when a nonempty value is known. Absence is unknown, not proof of no username and not a clearing instruction. |
+| `result.data.data.extra.business_name`  | No      | `string`       | -           | WhatsApp Business or verified name.                                                                                                                                             |
+| `result.data.data.extra.redacted_phone` | No      | `string`       | -           | Masked phone when only partial digits are available.                                                                                                                            |
 
 ### TypeScript example
 
 ```ts
 const result = await device.getContact({
+  params: {
+    path: {
+      account_id: "acc_xxx"
+    },
+    query: {
+      contact_id: "contact_xxx"
+    }
+  }
+});
+console.log(result.data.data);
+```
+
+---
+
+<a id="get-contact-membership"></a>
+
+## `getContactMembership`
+
+Check contact-list membership
+
+Check whether a contact belongs to this account's channel contact list.
+
+| Property        | Value                                                                            |
+| --------------- | -------------------------------------------------------------------------------- |
+| HTTP            | `GET` `/v1/accounts/{account_id}/contacts/membership`                            |
+| SDK method      | `device.getContactMembership(request, execution?)`                               |
+| SDK return type | `Promise<ApiResult<OperationData<DeviceApiOperations["getContactMembership"]>>>` |
+| Authentication  | `X-Api-Key` (injected by the client)                                             |
+| Mutability      | `read`                                                                           |
+| Automatic retry | No automatic retries                                                             |
+
+### Parameters
+
+| SDK field                 | Location | Required | Type     | Example         | Constraints | Description                                                        |
+| ------------------------- | -------- | -------- | -------- | --------------- | ----------- | ------------------------------------------------------------------ |
+| `params.path.account_id`  | path     | Yes      | `string` | `"acc_xxx"`     | -           | Public account ID issued by the API, for example acc_example.      |
+| `params.query.contact_id` | query    | Yes      | `string` | `"contact_xxx"` | -           | Contact ID; for WhatsApp use the LID returned by the contacts API. |
+
+### Request body
+
+No request body.
+
+### Responses
+
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | Contact-list membership result.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
+
+The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
+
+Success status `200` response fields:
+
+| Field                             | Present | Type                | Constraints | Description                                                            |
+| --------------------------------- | ------- | ------------------- | ----------- | ---------------------------------------------------------------------- |
+| `result.data.request_id`          | No      | `string`            | -           | The request ID generated by the server.                                |
+| `result.data.client_request_id`   | No      | `string`            | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
+| `result.data.data`                | Yes     | `ContactMembership` | -           | -                                                                      |
+| `result.data.data.contact_id`     | Yes     | `string`            | -           | Contact identifier from the query.                                     |
+| `result.data.data.is_in_contacts` | Yes     | `boolean`           | -           | Whether the contact exists in this account's channel contact list.     |
+
+### TypeScript example
+
+```ts
+const result = await device.getContactMembership({
   params: {
     path: {
       account_id: "acc_xxx"
@@ -181,9 +357,9 @@ List blocked contacts
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
@@ -191,14 +367,14 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | A list of blocked contacts.                                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | A list of blocked contacts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -244,13 +420,13 @@ List contacts
 
 ### Parameters
 
-| SDK field                    | Location | Required | Type                 | Example                  | Constraints | Description                                                                                                                                                                  |
-| ---------------------------- | -------- | -------- | -------------------- | ------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params.path.account_id`     | path     | Yes      | `string`             | `"acc_xxx"`              | -           | The account `public_id` issued by the Device API, for example `acc_xxx`.                                                                                                     |
-| `params.query.cursor`        | query    | No       | `string`             | `"cursor_xxx"`           | -           | The `next_cursor` returned by the previous response.                                                                                                                         |
-| `params.query.limit`         | query    | No       | `integer`            | `1`                      | minimum=1   | The number of items per page. The default may vary by provider when omitted.                                                                                                 |
-| `params.query.q`             | query    | No       | `string`             | `"q_xxx"`                | -           | Filter by keyword.                                                                                                                                                           |
-| `params.query.updated_since` | query    | No       | `string (date-time)` | `"2026-01-01T00:00:00Z"` | -           | An RFC3339 timestamp. Returns only contacts updated after this time; if the provider does not support incremental queries, the operation may fall back to a full result set. |
+| SDK field                    | Location | Required | Type                 | Example                  | Constraints            | Description                                                                                                                                                                                |
+| ---------------------------- | -------- | -------- | -------------------- | ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params.path.account_id`     | path     | Yes      | `string`             | `"acc_xxx"`              | -                      | Public account ID issued by the API, for example acc_example.                                                                                                                              |
+| `params.query.cursor`        | query    | No       | `string`             | `"cursor_xxx"`           | -                      | Opaque provider cursor: return next_cursor unchanged. Forged/expired/reused cursors may be ignored, restart pagination or produce channel errors; no universal 400 behavior is guaranteed. |
+| `params.query.limit`         | query    | No       | `integer`            | `1`                      | minimum=1, maximum=100 | Maximum page size.                                                                                                                                                                         |
+| `params.query.q`             | query    | No       | `string`             | `"q_xxx"`                | -                      | Filter by keyword.                                                                                                                                                                         |
+| `params.query.updated_since` | query    | No       | `string (date-time)` | `"2026-01-01T00:00:00Z"` | -                      | RFC3339 timestamp for contacts updated after this time; channels without incremental filtering may return all contacts.                                                                    |
 
 ### Request body
 
@@ -258,35 +434,42 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | A paginated list of contacts.                                              |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | A paginated list of contacts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
 Success status `200` response fields:
 
-| Field                                       | Present | Type                | Constraints | Description                                                            |
-| ------------------------------------------- | ------- | ------------------- | ----------- | ---------------------------------------------------------------------- |
-| `result.data.request_id`                    | No      | `string`            | -           | The request ID generated by the server.                                |
-| `result.data.client_request_id`             | No      | `string`            | -           | Echoed when the client supplies a valid `X-Request-Id` request header. |
-| `result.data.data`                          | Yes     | `ContactListResult` | -           | -                                                                      |
-| `result.data.data.items`                    | Yes     | `Array<Contact>`    | -           | -                                                                      |
-| `result.data.data.items[].id`               | Yes     | `string`            | -           | -                                                                      |
-| `result.data.data.items[].conversation_id`  | Yes     | `string`            | -           | -                                                                      |
-| `result.data.data.items[].display_name`     | Yes     | `string`            | -           | -                                                                      |
-| `result.data.data.items[].avatar_url`       | Yes     | `string`            | -           | -                                                                      |
-| `result.data.data.items[].provider_user_id` | Yes     | `string`            | -           | -                                                                      |
-| `result.data.data.items[].is_blocked`       | No      | `boolean`           | -           | -                                                                      |
-| `result.data.data.items[].extra`            | No      | `FreeFormObject`    | -           | -                                                                      |
-| `result.data.data.next_cursor`              | No      | `string`            | -           | -                                                                      |
-| `result.data.data.has_more`                 | Yes     | `boolean`           | -           | -                                                                      |
+| Field                                           | Present | Type                | Constraints | Description                                                                                                                                                                     |
+| ----------------------------------------------- | ------- | ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `result.data.request_id`                        | No      | `string`            | -           | The request ID generated by the server.                                                                                                                                         |
+| `result.data.client_request_id`                 | No      | `string`            | -           | Echoed when the client supplies a valid `X-Request-Id` request header.                                                                                                          |
+| `result.data.data`                              | Yes     | `ContactListResult` | -           | -                                                                                                                                                                               |
+| `result.data.data.items`                        | Yes     | `Array<Contact>`    | -           | -                                                                                                                                                                               |
+| `result.data.data.items[].id`                   | Yes     | `string`            | -           | Contact identifier.                                                                                                                                                             |
+| `result.data.data.items[].conversation_id`      | Yes     | `string`            | -           | Opaque messaging or conversation identifier.                                                                                                                                    |
+| `result.data.data.items[].display_name`         | Yes     | `string`            | -           | -                                                                                                                                                                               |
+| `result.data.data.items[].avatar_url`           | Yes     | `string`            | -           | -                                                                                                                                                                               |
+| `result.data.data.items[].provider_user_id`     | Yes     | `string`            | -           | Opaque channel user identifier.                                                                                                                                                 |
+| `result.data.data.items[].is_blocked`           | No      | `boolean`           | -           | -                                                                                                                                                                               |
+| `result.data.data.items[].extra`                | No      | `ContactExtra`      | -           | Channel contact extensions, only when reliable values are available.                                                                                                            |
+| `result.data.data.items[].extra.phone`          | No      | `string`            | -           | Plain phone parsed from a WhatsApp phone JID.                                                                                                                                   |
+| `result.data.data.items[].extra.first_name`     | No      | `string`            | -           | Saved short/first contact name in this account's address book.                                                                                                                  |
+| `result.data.data.items[].extra.full_name`      | No      | `string`            | -           | Saved full contact name in this account's address book.                                                                                                                         |
+| `result.data.data.items[].extra.push_name`      | No      | `string`            | -           | Contact's self-configured WhatsApp personal name.                                                                                                                               |
+| `result.data.data.items[].extra.username`       | No      | `string`            | minLength=1 | WhatsApp contact username, independent of push_name. Returned only when a nonempty value is known. Absence is unknown, not proof of no username and not a clearing instruction. |
+| `result.data.data.items[].extra.business_name`  | No      | `string`            | -           | WhatsApp Business or verified name.                                                                                                                                             |
+| `result.data.data.items[].extra.redacted_phone` | No      | `string`            | -           | Masked phone when only partial digits are available.                                                                                                                            |
+| `result.data.data.next_cursor`                  | No      | `string`            | -           | -                                                                                                                                                                               |
+| `result.data.data.has_more`                     | Yes     | `boolean`           | -           | -                                                                                                                                                                               |
 
 ### TypeScript example
 
@@ -323,9 +506,9 @@ Set or clear a contact note
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
@@ -338,16 +521,16 @@ JSON request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                   |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                      |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -396,30 +579,30 @@ Unblock a contact
 
 ### Parameters
 
-| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                              |
-| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------------------ |
-| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | The account `public_id` issued by the Device API, for example `acc_xxx`. |
+| SDK field                | Location | Required | Type     | Example     | Constraints | Description                                                   |
+| ------------------------ | -------- | -------- | -------- | ----------- | ----------- | ------------------------------------------------------------- |
+| `params.path.account_id` | path     | Yes      | `string` | `"acc_xxx"` | -           | Public account ID issued by the API, for example acc_example. |
 
 ### Request body
 
 JSON request body.
 
-| Field             | Required | Type     | Constraints | Description |
-| ----------------- | -------- | -------- | ----------- | ----------- |
-| `body.contact_id` | Yes      | `string` | -           | -           |
+| Field             | Required | Type     | Constraints | Description                                                                    |
+| ----------------- | -------- | -------- | ----------- | ------------------------------------------------------------------------------ |
+| `body.contact_id` | Yes      | `string` | -           | Channel contact ID. WhatsApp block/unblock requires a numeric @lid identifier. |
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                   |
-| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                      |
-| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.              |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
-| `501`       | `application/json` | `ErrorEnvelope`         | The current provider does not support this capability.                     |
-| `502`       | `application/json` | `ErrorEnvelope`         | This capability is unavailable for the current provider.                   |
+| HTTP status | Content-Type       | Schema                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | The operation succeeded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `400`       | `application/json` | `ErrorEnvelope`         | The request body or parameters are invalid.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `404`       | `application/json` | `ErrorEnvelope`         | The resource or route does not exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `409`       | `application/json` | `ErrorEnvelope`         | The request conflicts with the current state of the resource.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `501`       | `application/json` | `ErrorEnvelope`         | The account's channel does not support this capability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `502`       | `application/json` | `ErrorEnvelope`         | Channel unavailable or invalid response. Protocol login restriction uses 30020: stop automatic retry and check the official WhatsApp app. WhatsApp disconnection uses 30021 across messages/contacts/groups: pause dependent requests, refresh runtime, restore connection and confirm running before resuming. It does not prove logout or invalid authorization, nor automatically retry/reconnect/change state. 30010 may include an original reason; branch on codes, not text. WhatsApp group-admin send rejection uses 34012: resolve permissions before resending. |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -442,7 +625,7 @@ const result = await device.unblockContact({
     }
   },
   body: {
-    contact_id: "contact_xxx"
+    contact_id: "123456789012345@lid"
   }
 });
 console.log(result.data.data);

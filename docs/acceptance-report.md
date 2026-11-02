@@ -7,6 +7,23 @@
 
 > This document records the pre-release acceptance baseline and the current distribution boundary. For the latest SDK version and installation instructions, see the root `README.md`.
 
+## Unreleased source verification - November 2, 2026
+
+The current source synchronizes 78 HTTP operations and 24 standard event types. The existing
+release baseline below is historical. This update has 84 passing offline tests; generated examples,
+type checking, source/public scans, builds and both package archives passed local checks. Coverage
+is 96.79% lines and 85.81% branches. Contract lint succeeds with 33 warnings also present in the
+input contract; no lint rules were suppressed. Generation is deterministic. This does not verify
+deployment or live authorization, calls, messages or Webhook delivery. No version, tag, push or
+publication is part of this update.
+
+The compatibility review adds six regression tests with positive and negative TypeScript fixtures.
+HTTP operation exports remain separate from Webhook receiver operations. All 49 public Webhook
+examples across 25 declared shapes now compile; the full contract declares 36 specialized shapes.
+Generation preserves shared alternative fields, vote state narrowing, disabled/unpinned snapshots,
+required inbound call senders and forbidden sparse call-update fields. Numeric ranges, formats and
+other cross-field rules still require runtime validation at the receiver.
+
 ## Conclusion
 
 The SDK, MCP server, public skills, generation pipeline, and quality gates passed the complete local acceptance baseline. The project can continue to adopt new operations from the public API contract. A new operation is not retried or exposed through MCP until its policy has been explicitly reviewed.
