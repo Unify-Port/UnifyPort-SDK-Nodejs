@@ -2,10 +2,11 @@
  * 此文件由 `pnpm generate` 根据公开 OpenAPI 契约生成。
  * 仅在编译期验证 API Reference 示例，不会主动执行网络请求。
  */
-import type { DeviceApiOperations, UnifyPortDeviceClient } from "../../src/index.js";
+import type { UnifyPortDeviceClient } from "../../src/index.js";
 
 type ApiReferenceExamples = {
-  readonly [K in keyof DeviceApiOperations]: (device: UnifyPortDeviceClient) => Promise<void>;
+  // Webhook operationId 描述接收契约，调用示例只覆盖 HTTP 客户端方法。
+  readonly [K in keyof UnifyPortDeviceClient]: (device: UnifyPortDeviceClient) => Promise<void>;
 };
 
 // 显式映射让新增 operation 在缺少文档示例时直接触发类型或键集合错误。
@@ -18,7 +19,7 @@ export const apiReferenceExamples = {
         }
       },
       body: {
-        contact_id: "contact_xxx"
+        contact_id: "123456789012345@lid"
       }
     });
   },
@@ -40,19 +41,68 @@ export const apiReferenceExamples = {
       }
     });
   },
+  confirmAccountPasskey: async (device) => {
+    await device.confirmAccountPasskey({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      }
+    });
+  },
   createAccount: async (device) => {
     await device.createAccount({
       body: {
         provider: "telegram",
-        region: "global"
+        region: "global",
+        auth_mode: "qrcode"
+      }
+    });
+  },
+  createAccountAuthSession: async (device) => {
+    await device.createAccountAuthSession({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
       }
     });
   },
   createApiKey: async (device) => {
     await device.createApiKey({
       body: {
-        name: "默认密钥",
+        name: "Example",
         prefix: "dk_live"
+      }
+    });
+  },
+  createCall: async (device) => {
+    await device.createCall({
+      body: {
+        account_id: "acc_example",
+        to: {
+          id: "100000000000002@lid",
+          type: "user"
+        },
+        media_type: "video"
+      }
+    });
+  },
+  createContact: async (device) => {
+    await device.createContact({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        phone_number: "8613800000000",
+        username: "alice_user",
+        whatsapp_options: {
+          first_name: "Alice",
+          full_name: "Alice Example",
+          sync_to_device_contacts: false
+        }
       }
     });
   },
@@ -143,8 +193,38 @@ export const apiReferenceExamples = {
       }
     });
   },
+  getAccountOperation: async (device) => {
+    await device.getAccountOperation({
+      params: {
+        path: {
+          operation_id: "operation_id_xxx"
+        }
+      }
+    });
+  },
+  getActiveCall: async (device) => {
+    await device.getActiveCall({
+      params: {
+        query: {
+          account_id: "acc_xxx"
+        }
+      }
+    });
+  },
   getContact: async (device) => {
     await device.getContact({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        },
+        query: {
+          contact_id: "contact_xxx"
+        }
+      }
+    });
+  },
+  getContactMembership: async (device) => {
+    await device.getContactMembership({
       params: {
         path: {
           account_id: "acc_xxx"
@@ -191,6 +271,18 @@ export const apiReferenceExamples = {
       }
     });
   },
+  getPost: async (device) => {
+    await device.getPost({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        post_id: "7500000000000000101"
+      }
+    });
+  },
   getWebhookEndpoint: async (device) => {
     await device.getWebhookEndpoint({
       params: {
@@ -202,6 +294,18 @@ export const apiReferenceExamples = {
   },
   getWorkspace: async (device) => {
     await device.getWorkspace();
+  },
+  hangupCall: async (device) => {
+    await device.hangupCall({
+      params: {
+        path: {
+          call_id: "call_id_xxx"
+        }
+      },
+      body: {
+        account_id: "acc_example"
+      }
+    });
   },
   importAccountAuthSession: async (device) => {
     await device.importAccountAuthSession({
@@ -228,7 +332,13 @@ export const apiReferenceExamples = {
     });
   },
   listAccounts: async (device) => {
-    await device.listAccounts();
+    await device.listAccounts({
+      params: {
+        query: {
+          limit: 20
+        }
+      }
+    });
   },
   listApiKeys: async (device) => {
     await device.listApiKeys();
@@ -315,6 +425,30 @@ export const apiReferenceExamples = {
       }
     });
   },
+  listPostComments: async (device) => {
+    await device.listPostComments({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        post_id: "post_id_xxx"
+      }
+    });
+  },
+  listPosts: async (device) => {
+    await device.listPosts({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        },
+        query: {
+          limit: 20
+        }
+      }
+    });
+  },
   listProviderRegions: async (device) => {
     await device.listProviderRegions({
       params: {
@@ -335,7 +469,8 @@ export const apiReferenceExamples = {
         }
       },
       body: {
-        conversation_id: "conversation_xxx"
+        conversation_id: "-1001234567890",
+        up_to_message_id: "12345"
       }
     });
   },
@@ -409,6 +544,37 @@ export const apiReferenceExamples = {
         path: {
           account_id: "acc_xxx"
         }
+      }
+    });
+  },
+  replyPostComment: async (device) => {
+    await device.replyPostComment({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        post_id: "7500000000000000101",
+        text: "Example"
+      }
+    });
+  },
+  requestConversationHistory: async (device) => {
+    await device.requestConversationHistory({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        conversation_id: "100000000000002@lid",
+        before: {
+          message_id: "MSG_HISTORY_ANCHOR_001",
+          sent_at: "2026-09-28T03:00:00Z",
+          direction: "inbound"
+        },
+        limit: 50
       }
     });
   },
@@ -548,6 +714,18 @@ export const apiReferenceExamples = {
       }
     });
   },
+  submitAccountPasskeyResponse: async (device) => {
+    await device.submitAccountPasskeyResponse({
+      params: {
+        path: {
+          account_id: "acc_xxx"
+        }
+      },
+      body: {
+        webauthn_response: '{"id":"credential-id","response":{"clientDataJSON":"..."}}'
+      }
+    });
+  },
   unblockContact: async (device) => {
     await device.unblockContact({
       params: {
@@ -556,7 +734,7 @@ export const apiReferenceExamples = {
         }
       },
       body: {
-        contact_id: "contact_xxx"
+        contact_id: "123456789012345@lid"
       }
     });
   },
@@ -591,10 +769,7 @@ export const apiReferenceExamples = {
           account_id: "acc_xxx"
         }
       },
-      body: {
-        provider: "telegram",
-        region: "global"
-      }
+      body: {}
     });
   },
   updateApiKeyStatus: async (device) => {

@@ -575,10 +575,11 @@ function typecheckFixture(
  * 此文件由 \`pnpm generate\` 根据公开 OpenAPI 契约生成。
  * 仅在编译期验证 API Reference 示例，不会主动执行网络请求。
  */
-import type { DeviceApiOperations, UnifyPortDeviceClient } from "../../src/index.js";
+import type { UnifyPortDeviceClient } from "../../src/index.js";
 
 type ApiReferenceExamples = {
-  readonly [K in keyof DeviceApiOperations]: (device: UnifyPortDeviceClient) => Promise<void>;
+  // Webhook operationId 描述接收契约，调用示例只覆盖 HTTP 客户端方法。
+  readonly [K in keyof UnifyPortDeviceClient]: (device: UnifyPortDeviceClient) => Promise<void>;
 };
 
 // 显式映射让新增 operation 在缺少文档示例时直接触发类型或键集合错误。

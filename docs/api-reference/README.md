@@ -4,7 +4,7 @@
 
 [English](README.md) | [简体中文](../zh-CN/api-reference/README.md)
 
-This reference is generated from `contracts/device.openapi.yaml` and currently contains 64 operations.
+This reference is generated from `contracts/device.openapi.yaml` and currently contains 78 operations.
 Every operation includes parameters, request-body details, responses, and a TypeScript example.
 Field descriptions come strictly from the public contract. `-` means the contract provides no additional description; implementation details are never inferred.
 
@@ -50,7 +50,7 @@ Workspace API key management.
 
 ### Providers
 
-Provider metadata queries.
+Query available channels and metadata.
 
 | operationId                                                 | Method | Path                               | Description                      |
 | ----------------------------------------------------------- | ------ | ---------------------------------- | -------------------------------- |
@@ -58,34 +58,38 @@ Provider metadata queries.
 
 ### Accounts
 
-Provider account resource management.
+Manage channel accounts.
 
-| operationId                                   | Method | Path                        | Description         |
-| --------------------------------------------- | ------ | --------------------------- | ------------------- |
-| [`createAccount`](accounts.md#create-account) | POST   | `/v1/accounts`              | Create an account   |
-| [`deleteAccount`](accounts.md#delete-account) | DELETE | `/v1/accounts/{account_id}` | Delete an account   |
-| [`getAccount`](accounts.md#get-account)       | GET    | `/v1/accounts/{account_id}` | Get account details |
-| [`listAccounts`](accounts.md#list-accounts)   | GET    | `/v1/accounts`              | List accounts       |
-| [`updateAccount`](accounts.md#update-account) | PATCH  | `/v1/accounts/{account_id}` | Update an account   |
+| operationId                                                | Method | Path                                    | Description                      |
+| ---------------------------------------------------------- | ------ | --------------------------------------- | -------------------------------- |
+| [`createAccount`](accounts.md#create-account)              | POST   | `/v1/accounts`                          | Create an account                |
+| [`deleteAccount`](accounts.md#delete-account)              | DELETE | `/v1/accounts/{account_id}`             | Delete an account                |
+| [`getAccount`](accounts.md#get-account)                    | GET    | `/v1/accounts/{account_id}`             | Get account details              |
+| [`getAccountOperation`](accounts.md#get-account-operation) | GET    | `/v1/account-operations/{operation_id}` | Get an account billing operation |
+| [`listAccounts`](accounts.md#list-accounts)                | GET    | `/v1/accounts`                          | List accounts                    |
+| [`updateAccount`](accounts.md#update-account)              | PATCH  | `/v1/accounts/{account_id}`             | Update an account                |
 
 ### Account Auth
 
-Provider account authorization flows.
+Authorize channel accounts.
 
-| operationId                                                                 | Method | Path                                      | Description                             |
-| --------------------------------------------------------------------------- | ------ | ----------------------------------------- | --------------------------------------- |
-| [`cancelAccountAuth`](account-auth.md#cancel-account-auth)                  | POST   | `/v1/accounts/{account_id}/auth/cancel`   | Cancel the authorization flow           |
-| [`checkAccountQrAuth`](account-auth.md#check-account-qr-auth)               | POST   | `/v1/accounts/{account_id}/auth/qr/check` | Check the QR code authorization result  |
-| [`getAccountAuthState`](account-auth.md#get-account-auth-state)             | GET    | `/v1/accounts/{account_id}/auth`          | Get account authorization status        |
-| [`importAccountAuthSession`](account-auth.md#import-account-auth-session)   | POST   | `/v1/accounts/{account_id}/auth/session`  | Import session authorization            |
-| [`startAccountAuth`](account-auth.md#start-account-auth)                    | POST   | `/v1/accounts/{account_id}/auth/start`    | Start code-based authorization          |
-| [`startAccountQrAuth`](account-auth.md#start-account-qr-auth)               | POST   | `/v1/accounts/{account_id}/auth/qr/start` | Start QR code authorization             |
-| [`submitAccountAuthCode`](account-auth.md#submit-account-auth-code)         | POST   | `/v1/accounts/{account_id}/auth/code`     | Submit an authorization code            |
-| [`submitAccountAuthPassword`](account-auth.md#submit-account-auth-password) | POST   | `/v1/accounts/{account_id}/auth/password` | Submit a two-step verification password |
+| operationId                                                                       | Method | Path                                              | Description                             |
+| --------------------------------------------------------------------------------- | ------ | ------------------------------------------------- | --------------------------------------- |
+| [`cancelAccountAuth`](account-auth.md#cancel-account-auth)                        | POST   | `/v1/accounts/{account_id}/auth/cancel`           | Cancel the authorization flow           |
+| [`checkAccountQrAuth`](account-auth.md#check-account-qr-auth)                     | POST   | `/v1/accounts/{account_id}/auth/qr/check`         | Check the QR code authorization result  |
+| [`confirmAccountPasskey`](account-auth.md#confirm-account-passkey)                | POST   | `/v1/accounts/{account_id}/auth/passkey-confirm`  | Confirm Passkey authorization           |
+| [`createAccountAuthSession`](account-auth.md#create-account-auth-session)         | POST   | `/v1/accounts/{account_id}/auth-sessions`         | Create a hosted authorization session   |
+| [`getAccountAuthState`](account-auth.md#get-account-auth-state)                   | GET    | `/v1/accounts/{account_id}/auth`                  | Get account authorization status        |
+| [`importAccountAuthSession`](account-auth.md#import-account-auth-session)         | POST   | `/v1/accounts/{account_id}/auth/session`          | Import session authorization            |
+| [`startAccountAuth`](account-auth.md#start-account-auth)                          | POST   | `/v1/accounts/{account_id}/auth/start`            | Start code-based authorization          |
+| [`startAccountQrAuth`](account-auth.md#start-account-qr-auth)                     | POST   | `/v1/accounts/{account_id}/auth/qr/start`         | Start QR code authorization             |
+| [`submitAccountAuthCode`](account-auth.md#submit-account-auth-code)               | POST   | `/v1/accounts/{account_id}/auth/code`             | Submit an authorization code            |
+| [`submitAccountAuthPassword`](account-auth.md#submit-account-auth-password)       | POST   | `/v1/accounts/{account_id}/auth/password`         | Submit a two-step verification password |
+| [`submitAccountPasskeyResponse`](account-auth.md#submit-account-passkey-response) | POST   | `/v1/accounts/{account_id}/auth/passkey-response` | Submit a Passkey response               |
 
 ### Account Runtime
 
-Provider account runtime controls.
+Manage account runtime state.
 
 | operationId                                                               | Method | Path                                          | Description                   |
 | ------------------------------------------------------------------------- | ------ | --------------------------------------------- | ----------------------------- |
@@ -94,42 +98,56 @@ Provider account runtime controls.
 | [`startAccountRuntime`](account-runtime.md#start-account-runtime)         | POST   | `/v1/accounts/{account_id}/runtime/start`     | Start account runtime         |
 | [`stopAccountRuntime`](account-runtime.md#stop-account-runtime)           | POST   | `/v1/accounts/{account_id}/runtime/stop`      | Stop account runtime          |
 
+### Posts
+
+Read the signed-in account's posts and first-level comments, and publish or reply to comments.
+
+| operationId                                       | Method | Path                                             | Description                                   |
+| ------------------------------------------------- | ------ | ------------------------------------------------ | --------------------------------------------- |
+| [`getPost`](posts.md#get-post)                    | POST   | `/v1/accounts/{account_id}/posts/info`           | Get post details                              |
+| [`listPostComments`](posts.md#list-post-comments) | POST   | `/v1/accounts/{account_id}/posts/comments/list`  | List first-level post comments                |
+| [`listPosts`](posts.md#list-posts)                | GET    | `/v1/accounts/{account_id}/posts`                | List the signed-in account's posts            |
+| [`replyPostComment`](posts.md#reply-post-comment) | POST   | `/v1/accounts/{account_id}/posts/comments/reply` | Publish a first-level comment or reply to one |
+
 ### Conversations
 
-Conversation lists, details, members, read state, mute state, pinning, and labels.
+Conversations, members, history requests, read state, mute, pins and labels.
 
-| operationId                                                                      | Method | Path                                                    | Description                           |
-| -------------------------------------------------------------------------------- | ------ | ------------------------------------------------------- | ------------------------------------- |
-| [`deleteConversationLabel`](conversations.md#delete-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/delete` | Delete a conversation label           |
-| [`getConversation`](conversations.md#get-conversation)                           | GET    | `/v1/accounts/{account_id}/conversations/info`          | Get conversation details              |
-| [`listConversationLabels`](conversations.md#list-conversation-labels)            | GET    | `/v1/accounts/{account_id}/conversations/labels`        | List conversation labels              |
-| [`listConversationMembers`](conversations.md#list-conversation-members)          | GET    | `/v1/accounts/{account_id}/conversations/members`       | List conversation members             |
-| [`listConversations`](conversations.md#list-conversations)                       | GET    | `/v1/accounts/{account_id}/conversations`               | List conversations                    |
-| [`markConversationRead`](conversations.md#mark-conversation-read)                | POST   | `/v1/accounts/{account_id}/conversations/read`          | Mark a conversation as read           |
-| [`markConversationUnread`](conversations.md#mark-conversation-unread)            | POST   | `/v1/accounts/{account_id}/conversations/unread`        | Mark a conversation as unread         |
-| [`muteConversation`](conversations.md#mute-conversation)                         | POST   | `/v1/accounts/{account_id}/conversations/mute`          | Mute a conversation                   |
-| [`pinConversation`](conversations.md#pin-conversation)                           | POST   | `/v1/accounts/{account_id}/conversations/pin`           | Pin a conversation                    |
-| [`setConversationLabelMembers`](conversations.md#set-conversation-label-members) | POST   | `/v1/accounts/{account_id}/conversations/labels`        | Add or remove a conversation label    |
-| [`unmuteConversation`](conversations.md#unmute-conversation)                     | POST   | `/v1/accounts/{account_id}/conversations/unmute`        | Unmute a conversation                 |
-| [`unpinConversation`](conversations.md#unpin-conversation)                       | POST   | `/v1/accounts/{account_id}/conversations/unpin`         | Unpin a conversation                  |
-| [`upsertConversationLabel`](conversations.md#upsert-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/upsert` | Create or update a conversation label |
+| operationId                                                                      | Method | Path                                                      | Description                           |
+| -------------------------------------------------------------------------------- | ------ | --------------------------------------------------------- | ------------------------------------- |
+| [`deleteConversationLabel`](conversations.md#delete-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/delete`   | Delete a conversation label           |
+| [`getConversation`](conversations.md#get-conversation)                           | GET    | `/v1/accounts/{account_id}/conversations/info`            | Get conversation details              |
+| [`listConversationLabels`](conversations.md#list-conversation-labels)            | GET    | `/v1/accounts/{account_id}/conversations/labels`          | List conversation labels              |
+| [`listConversationMembers`](conversations.md#list-conversation-members)          | GET    | `/v1/accounts/{account_id}/conversations/members`         | List conversation members             |
+| [`listConversations`](conversations.md#list-conversations)                       | GET    | `/v1/accounts/{account_id}/conversations`                 | List conversations                    |
+| [`markConversationRead`](conversations.md#mark-conversation-read)                | POST   | `/v1/accounts/{account_id}/conversations/read`            | Mark a conversation as read           |
+| [`markConversationUnread`](conversations.md#mark-conversation-unread)            | POST   | `/v1/accounts/{account_id}/conversations/unread`          | Mark a conversation as unread         |
+| [`muteConversation`](conversations.md#mute-conversation)                         | POST   | `/v1/accounts/{account_id}/conversations/mute`            | Mute a conversation                   |
+| [`pinConversation`](conversations.md#pin-conversation)                           | POST   | `/v1/accounts/{account_id}/conversations/pin`             | Pin a conversation                    |
+| [`requestConversationHistory`](conversations.md#request-conversation-history)    | POST   | `/v1/accounts/{account_id}/conversations/history/request` | Request earlier conversation history  |
+| [`setConversationLabelMembers`](conversations.md#set-conversation-label-members) | POST   | `/v1/accounts/{account_id}/conversations/labels`          | Add or remove a conversation label    |
+| [`unmuteConversation`](conversations.md#unmute-conversation)                     | POST   | `/v1/accounts/{account_id}/conversations/unmute`          | Unmute a conversation                 |
+| [`unpinConversation`](conversations.md#unpin-conversation)                       | POST   | `/v1/accounts/{account_id}/conversations/unpin`           | Unpin a conversation                  |
+| [`upsertConversationLabel`](conversations.md#upsert-conversation-label)          | POST   | `/v1/accounts/{account_id}/conversations/labels/upsert`   | Create or update a conversation label |
 
 ### Contacts
 
-Provider contact views and contact actions.
+Query and manage contacts.
 
-| operationId                                                  | Method | Path                                           | Description                 |
-| ------------------------------------------------------------ | ------ | ---------------------------------------------- | --------------------------- |
-| [`blockContact`](contacts.md#block-contact)                  | POST   | `/v1/accounts/{account_id}/contacts/block`     | Block a contact             |
-| [`getContact`](contacts.md#get-contact)                      | GET    | `/v1/accounts/{account_id}/contacts/info`      | Get contact details         |
-| [`listContactBlocklist`](contacts.md#list-contact-blocklist) | GET    | `/v1/accounts/{account_id}/contacts/blocklist` | List blocked contacts       |
-| [`listContacts`](contacts.md#list-contacts)                  | GET    | `/v1/accounts/{account_id}/contacts`           | List contacts               |
-| [`setContactNote`](contacts.md#set-contact-note)             | POST   | `/v1/accounts/{account_id}/contacts/note`      | Set or clear a contact note |
-| [`unblockContact`](contacts.md#unblock-contact)              | POST   | `/v1/accounts/{account_id}/contacts/unblock`   | Unblock a contact           |
+| operationId                                                  | Method | Path                                            | Description                   |
+| ------------------------------------------------------------ | ------ | ----------------------------------------------- | ----------------------------- |
+| [`blockContact`](contacts.md#block-contact)                  | POST   | `/v1/accounts/{account_id}/contacts/block`      | Block a contact               |
+| [`createContact`](contacts.md#create-contact)                | POST   | `/v1/accounts/{account_id}/contacts/add`        | Add a contact                 |
+| [`getContact`](contacts.md#get-contact)                      | GET    | `/v1/accounts/{account_id}/contacts/info`       | Get contact details           |
+| [`getContactMembership`](contacts.md#get-contact-membership) | GET    | `/v1/accounts/{account_id}/contacts/membership` | Check contact-list membership |
+| [`listContactBlocklist`](contacts.md#list-contact-blocklist) | GET    | `/v1/accounts/{account_id}/contacts/blocklist`  | List blocked contacts         |
+| [`listContacts`](contacts.md#list-contacts)                  | GET    | `/v1/accounts/{account_id}/contacts`            | List contacts                 |
+| [`setContactNote`](contacts.md#set-contact-note)             | POST   | `/v1/accounts/{account_id}/contacts/note`       | Set or clear a contact note   |
+| [`unblockContact`](contacts.md#unblock-contact)              | POST   | `/v1/accounts/{account_id}/contacts/unblock`    | Unblock a contact             |
 
 ### Groups
 
-Provider group views and group actions.
+Query and manage groups.
 
 | operationId                                                          | Method | Path                                                    | Description                         |
 | -------------------------------------------------------------------- | ------ | ------------------------------------------------------- | ----------------------------------- |
@@ -156,9 +174,19 @@ Unified message sending and message actions.
 | [`revokeMessage`](messages.md#revoke-message) | POST   | `/v1/messages/revoke`   | Revoke a message                 |
 | [`sendMessage`](messages.md#send-message)     | POST   | `/v1/messages`          | Send a message                   |
 
+### Calls
+
+Beta workspaces can prepare, query and end WhatsApp one-to-one voice/video calls. Incoming calls are not currently available.
+
+| operationId                                 | Method | Path                         | Description                   |
+| ------------------------------------------- | ------ | ---------------------------- | ----------------------------- |
+| [`createCall`](calls.md#create-call)        | POST   | `/v1/calls`                  | Prepare an outbound call      |
+| [`getActiveCall`](calls.md#get-active-call) | GET    | `/v1/calls/active`           | Get the account's active call |
+| [`hangupCall`](calls.md#hangup-call)        | POST   | `/v1/calls/{call_id}/hangup` | Hang up a call                |
+
 ### Webhook Endpoints
 
-Application webhook endpoint management.
+Manage Webhook receiver endpoints.
 
 | operationId                                                                     | Method | Path                                             | Description                |
 | ------------------------------------------------------------------------------- | ------ | ------------------------------------------------ | -------------------------- |

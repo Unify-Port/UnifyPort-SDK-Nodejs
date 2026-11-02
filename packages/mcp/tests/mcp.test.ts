@@ -24,7 +24,7 @@ function workspaceResponse(status = 200): Response {
     );
   }
   return new Response(
-    '{"request_id":"req_mcp","data":{"name":"Demo","status":"active","account_quota":9007199254740993,"account_quota_unlimited":false}}',
+    '{"request_id":"req_mcp","data":{"name":"Demo","status":"active","is_beta":false,"account_quota_used":0,"account_quota":9007199254740993,"account_quota_unlimited":false}}',
     { status: 200, headers: { "content-type": "application/json" } }
   );
 }
@@ -236,6 +236,8 @@ describe("operation registry policy", () => {
           name: "Demo",
           status: "active",
           account_quota: "9007199254740993",
+          account_quota_used: 0,
+          is_beta: false,
           account_quota_unlimited: false
         }
       },
@@ -327,6 +329,8 @@ describe("operation registry policy", () => {
               name: "x".repeat(1_100_000),
               status: "active",
               account_quota: 1,
+              account_quota_used: 0,
+              is_beta: false,
               account_quota_unlimited: false
             }
           })
@@ -408,7 +412,7 @@ describe("MCP protocol surface", () => {
       const firstContent = coverage.contents[0];
       expect(
         firstContent !== undefined && "text" in firstContent ? firstContent.text : ""
-      ).toContain('"sourceOperations": 64');
+      ).toContain('"sourceOperations": 78');
 
       await expect(
         client.callTool({ name: "device_get_account", arguments: {} })

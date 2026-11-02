@@ -79,6 +79,23 @@ export class UnifyPortDeviceClient {
     );
   }
 
+  /** 确认 Passkey 授权 */
+  public async confirmAccountPasskey(
+    request: FetchOptions<operations["confirmAccountPasskey"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["confirmAccountPasskey"]>>> {
+    const operation = deviceOperations["confirmAccountPasskey"];
+    return await this.#runtime.execute<OperationData<operations["confirmAccountPasskey"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/auth/passkey-confirm", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
   /** 创建账号 */
   public async createAccount(
     request: FetchOptions<operations["createAccount"]>,
@@ -96,6 +113,23 @@ export class UnifyPortDeviceClient {
     );
   }
 
+  /** 创建 Provider 授权会话 */
+  public async createAccountAuthSession(
+    request: FetchOptions<operations["createAccountAuthSession"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["createAccountAuthSession"]>>> {
+    const operation = deviceOperations["createAccountAuthSession"];
+    return await this.#runtime.execute<OperationData<operations["createAccountAuthSession"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/auth-sessions", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
   /** 创建 API Key */
   public async createApiKey(
     request: FetchOptions<operations["createApiKey"]>,
@@ -104,6 +138,40 @@ export class UnifyPortDeviceClient {
     const operation = deviceOperations["createApiKey"];
     return await this.#runtime.execute<OperationData<operations["createApiKey"]>>(operation, async () =>
       await this.#client.POST("/v1/api-keys", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 准备主动通话 */
+  public async createCall(
+    request: FetchOptions<operations["createCall"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["createCall"]>>> {
+    const operation = deviceOperations["createCall"];
+    return await this.#runtime.execute<OperationData<operations["createCall"]>>(operation, async () =>
+      await this.#client.POST("/v1/calls", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 添加联系人 */
+  public async createContact(
+    request: FetchOptions<operations["createContact"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["createContact"]>>> {
+    const operation = deviceOperations["createContact"];
+    return await this.#runtime.execute<OperationData<operations["createContact"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/contacts/add", {
         ...request,
         baseUrl: this.#runtime.baseUrl,
         fetch: this.#runtime.createFetch(operation, execution),
@@ -266,6 +334,40 @@ export class UnifyPortDeviceClient {
     );
   }
 
+  /** 查询账号计费操作 */
+  public async getAccountOperation(
+    request: FetchOptions<operations["getAccountOperation"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["getAccountOperation"]>>> {
+    const operation = deviceOperations["getAccountOperation"];
+    return await this.#runtime.execute<OperationData<operations["getAccountOperation"]>>(operation, async () =>
+      await this.#client.GET("/v1/account-operations/{operation_id}", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 查询账号当前活动通话 */
+  public async getActiveCall(
+    request: FetchOptions<operations["getActiveCall"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["getActiveCall"]>>> {
+    const operation = deviceOperations["getActiveCall"];
+    return await this.#runtime.execute<OperationData<operations["getActiveCall"]>>(operation, async () =>
+      await this.#client.GET("/v1/calls/active", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
   /** 获取联系人详情 */
   public async getContact(
     request: FetchOptions<operations["getContact"]>,
@@ -274,6 +376,23 @@ export class UnifyPortDeviceClient {
     const operation = deviceOperations["getContact"];
     return await this.#runtime.execute<OperationData<operations["getContact"]>>(operation, async () =>
       await this.#client.GET("/v1/accounts/{account_id}/contacts/info", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 查询联系人是否在联系人列表中 */
+  public async getContactMembership(
+    request: FetchOptions<operations["getContactMembership"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["getContactMembership"]>>> {
+    const operation = deviceOperations["getContactMembership"];
+    return await this.#runtime.execute<OperationData<operations["getContactMembership"]>>(operation, async () =>
+      await this.#client.GET("/v1/accounts/{account_id}/contacts/membership", {
         ...request,
         baseUrl: this.#runtime.baseUrl,
         fetch: this.#runtime.createFetch(operation, execution),
@@ -334,6 +453,23 @@ export class UnifyPortDeviceClient {
     );
   }
 
+  /** 获取帖子详情 */
+  public async getPost(
+    request: FetchOptions<operations["getPost"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["getPost"]>>> {
+    const operation = deviceOperations["getPost"];
+    return await this.#runtime.execute<OperationData<operations["getPost"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/posts/info", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
   /** 获取 webhook endpoint */
   public async getWebhookEndpoint(
     request: FetchOptions<operations["getWebhookEndpoint"]>,
@@ -359,6 +495,23 @@ export class UnifyPortDeviceClient {
     const operation = deviceOperations["getWorkspace"];
     return await this.#runtime.execute<OperationData<operations["getWorkspace"]>>(operation, async () =>
       await this.#client.GET("/v1/workspace", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 挂断指定通话 */
+  public async hangupCall(
+    request: FetchOptions<operations["hangupCall"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["hangupCall"]>>> {
+    const operation = deviceOperations["hangupCall"];
+    return await this.#runtime.execute<OperationData<operations["hangupCall"]>>(operation, async () =>
+      await this.#client.POST("/v1/calls/{call_id}/hangup", {
         ...request,
         baseUrl: this.#runtime.baseUrl,
         fetch: this.#runtime.createFetch(operation, execution),
@@ -555,6 +708,40 @@ export class UnifyPortDeviceClient {
     );
   }
 
+  /** 列出帖子的一级评论 */
+  public async listPostComments(
+    request: FetchOptions<operations["listPostComments"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["listPostComments"]>>> {
+    const operation = deviceOperations["listPostComments"];
+    return await this.#runtime.execute<OperationData<operations["listPostComments"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/posts/comments/list", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 列出本账号帖子 */
+  public async listPosts(
+    request: FetchOptions<operations["listPosts"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["listPosts"]>>> {
+    const operation = deviceOperations["listPosts"];
+    return await this.#runtime.execute<OperationData<operations["listPosts"]>>(operation, async () =>
+      await this.#client.GET("/v1/accounts/{account_id}/posts", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
   /** 查询 provider 地区可用性 */
   public async listProviderRegions(
     request: FetchOptions<operations["listProviderRegions"]>,
@@ -716,6 +903,40 @@ export class UnifyPortDeviceClient {
     const operation = deviceOperations["refreshAccountRuntime"];
     return await this.#runtime.execute<OperationData<operations["refreshAccountRuntime"]>>(operation, async () =>
       await this.#client.POST("/v1/accounts/{account_id}/runtime/refresh", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 发布一级评论或回复一级评论 */
+  public async replyPostComment(
+    request: FetchOptions<operations["replyPostComment"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["replyPostComment"]>>> {
+    const operation = deviceOperations["replyPostComment"];
+    return await this.#runtime.execute<OperationData<operations["replyPostComment"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/posts/comments/reply", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 请求补拉会话历史消息 */
+  public async requestConversationHistory(
+    request: FetchOptions<operations["requestConversationHistory"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["requestConversationHistory"]>>> {
+    const operation = deviceOperations["requestConversationHistory"];
+    return await this.#runtime.execute<OperationData<operations["requestConversationHistory"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/conversations/history/request", {
         ...request,
         baseUrl: this.#runtime.baseUrl,
         fetch: this.#runtime.createFetch(operation, execution),
@@ -920,6 +1141,23 @@ export class UnifyPortDeviceClient {
     const operation = deviceOperations["submitAccountAuthPassword"];
     return await this.#runtime.execute<OperationData<operations["submitAccountAuthPassword"]>>(operation, async () =>
       await this.#client.POST("/v1/accounts/{account_id}/auth/password", {
+        ...request,
+        baseUrl: this.#runtime.baseUrl,
+        fetch: this.#runtime.createFetch(operation, execution),
+        redirect: "error",
+          parseAs: "text",
+      }),
+    );
+  }
+
+  /** 提交 Passkey 凭证响应 */
+  public async submitAccountPasskeyResponse(
+    request: FetchOptions<operations["submitAccountPasskeyResponse"]>,
+    execution: RequestExecutionOptions = {},
+  ): Promise<ApiResult<OperationData<operations["submitAccountPasskeyResponse"]>>> {
+    const operation = deviceOperations["submitAccountPasskeyResponse"];
+    return await this.#runtime.execute<OperationData<operations["submitAccountPasskeyResponse"]>>(operation, async () =>
+      await this.#client.POST("/v1/accounts/{account_id}/auth/passkey-response", {
         ...request,
         baseUrl: this.#runtime.baseUrl,
         fetch: this.#runtime.createFetch(operation, execution),

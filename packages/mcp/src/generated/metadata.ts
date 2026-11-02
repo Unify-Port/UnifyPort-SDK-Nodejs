@@ -7,8 +7,8 @@ export const generatedServerVersion = "0.1.0";
 export const generatedCoverage = [
   {
     "api": "device",
-    "sourceOperations": 64,
-    "sdkMethods": 64,
+    "sourceOperations": 78,
+    "sdkMethods": 78,
     "mcpEligible": 4
   }
 ] as const;

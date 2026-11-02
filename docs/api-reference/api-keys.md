@@ -42,10 +42,10 @@ No path, query, header, or cookie parameters.
 
 JSON request body.
 
-| Field         | Required | Type     | Constraints | Description                                  |
-| ------------- | -------- | -------- | ----------- | -------------------------------------------- |
-| `body.name`   | Yes      | `string` | -           | -                                            |
-| `body.prefix` | No       | `string` | -           | The prefix used when generating the API key. |
+| Field         | Required | Type     | Constraints | Description                                                  |
+| ------------- | -------- | -------- | ----------- | ------------------------------------------------------------ |
+| `body.name`   | Yes      | `string` | -           | -                                                            |
+| `body.prefix` | No       | `string` | -           | API-key prefix; default applies only when omitted, not null. |
 
 ### Responses
 
@@ -78,7 +78,7 @@ Success status `201` response fields:
 ```ts
 const result = await device.createApiKey({
   body: {
-    name: "Default key",
+    name: "Example",
     prefix: "dk_live"
   }
 });
@@ -112,11 +112,11 @@ No request body.
 
 ### Responses
 
-| HTTP status | Content-Type       | Schema                  | Description                                                                |
-| ----------- | ------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `200`       | `application/json` | `ResponseMeta & object` | A list of API keys. Full plaintext API keys are never returned.            |
-| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                             |
-| `500`       | `application/json` | `ErrorEnvelope`         | An internal server error or an unmapped error in the provider integration. |
+| HTTP status | Content-Type       | Schema                  | Description                                                     |
+| ----------- | ------------------ | ----------------------- | --------------------------------------------------------------- |
+| `200`       | `application/json` | `ResponseMeta & object` | A list of API keys. Full plaintext API keys are never returned. |
+| `401`       | `application/json` | `ErrorEnvelope`         | The API key is missing or cannot be validated.                  |
+| `500`       | `application/json` | `ErrorEnvelope`         | Server request processing failed.                               |
 
 The SDK returns `ApiResult<T>` with `data`, `status`, an optional `requestId`, and the underlying `response`.
 
@@ -168,10 +168,10 @@ Returns a new full `api_key` after rotation. The previous full key cannot be rec
 
 JSON request body.
 
-| Field         | Required | Type     | Constraints | Description                                  |
-| ------------- | -------- | -------- | ----------- | -------------------------------------------- |
-| `body.name`   | Yes      | `string` | -           | -                                            |
-| `body.prefix` | No       | `string` | -           | The prefix used when generating the API key. |
+| Field         | Required | Type     | Constraints | Description                                                  |
+| ------------- | -------- | -------- | ----------- | ------------------------------------------------------------ |
+| `body.name`   | Yes      | `string` | -           | -                                                            |
+| `body.prefix` | No       | `string` | -           | API-key prefix; default applies only when omitted, not null. |
 
 ### Responses
 

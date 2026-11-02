@@ -98,6 +98,25 @@ const HTTP_METHODS = ["get", "put", "post", "delete", "options", "head", "patch"
 
 // 这些覆盖项记录“仅从 HTTP method 无法推导”的业务语义，避免安全策略散落在 MCP 实现里。
 const POLICY_OVERRIDES: Readonly<Partial<Record<OperationPolicyKey, PolicyOverride>>> = {
+  // 新增能力逐项分类；短期链接和授权载荷不得进入模型工具面，也不能自动重试写入。
+  "device:createCall": { secretOutput: true, mcpExposure: "never" },
+  "device:getActiveCall": { mutability: "read", mcpExposure: "never" },
+  "device:hangupCall": { mutability: "destructive", mcpExposure: "never" },
+  "device:getAccountOperation": { mutability: "read", mcpExposure: "never" },
+  "device:createAccountAuthSession": { secretOutput: true, mcpExposure: "never" },
+  "device:submitAccountPasskeyResponse": {
+    secretInput: true,
+    secretOutput: true,
+    mcpExposure: "never"
+  },
+  "device:confirmAccountPasskey": { secretOutput: true, mcpExposure: "never" },
+  "device:listPosts": { mutability: "read", mcpExposure: "never" },
+  "device:getPost": { mutability: "read", mcpExposure: "never" },
+  "device:listPostComments": { mutability: "read", mcpExposure: "never" },
+  "device:replyPostComment": { mutability: "write", mcpExposure: "never" },
+  "device:requestConversationHistory": { mutability: "write", mcpExposure: "never" },
+  "device:createContact": { mutability: "write", mcpExposure: "never" },
+  "device:getContactMembership": { mutability: "read", mcpExposure: "never" },
   "device:deleteAccount": { mutability: "destructive" },
   "device:deleteConversationLabel": { mutability: "destructive" },
   "device:leaveGroup": { mutability: "destructive" },
@@ -206,6 +225,211 @@ function parseOpenApiDocument(source: string, contract: string): OpenApiDocument
     throw new Error(`${contract} 不是有效的 OpenAPI JSON object`);
   }
   return parsed;
+}
+
+function typeGenerationDocument(document: OpenApiDocument): OpenApiDocument {
+  const result = structuredClone(document);
+  // 隐式 discriminator 会被生成器误写为组件名；显式映射沿用原枚举，保持 wire 值不变。
+  function visit(value: JsonValue): void {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+    } else if (isJsonObject(value)) {
+      const discriminator = optionalObject(value, "discriminator");
+      const property = discriminator?.["propertyName"];
+      if (
+        discriminator !== undefined &&
+        typeof property === "string" &&
+        discriminator["mapping"] === undefined
+      ) {
+        const mapping: JsonObject = {};
+        for (const branch of optionalArray(value, "oneOf") ?? []) {
+          if (!isJsonObject(branch) || typeof branch["$ref"] !== "string") continue;
+          const schema = resolveObject(result, branch);
+          const field = optionalObject(optionalObject(schema, "properties"), property);
+          for (const tag of optionalArray(field ?? {}, "enum") ?? []) {
+            if (typeof tag === "string") mapping[tag] = branch["$ref"];
+          }
+        }
+        if (Object.keys(mapping).length > 0) discriminator["mapping"] = mapping;
+      }
+      Object.values(value).forEach(visit);
+      lowerFiniteConditionals(value, result);
+      lowerRequiredNegations(value);
+      intersectSharedAlternatives(value);
+    }
+  }
+  visit(result);
+  return result;
+}
+
+function lowerRequiredNegations(schema: JsonObject): void {
+  const negated = optionalObject(schema, "not");
+  if (negated === undefined) return;
+  let constraint: JsonObject;
+  if (Object.keys(negated).length === 1 && Array.isArray(negated["required"])) {
+    const names = negated["required"];
+    if (names.length === 0 || !names.every((name) => typeof name === "string")) return;
+    // not(required a,b) 表示至少缺少其中一个；不能错误地禁止两个字段各自出现。
+    const alternatives = names.map((name) => ({
+      type: "object",
+      properties: { [name]: false }
+    }));
+    constraint = alternatives.length === 1 ? (alternatives[0] ?? {}) : { anyOf: alternatives };
+  } else if (Object.keys(negated).length === 1 && Array.isArray(negated["anyOf"])) {
+    const clauses = negated["anyOf"];
+    if (
+      !clauses.every(
+        (clause) =>
+          isJsonObject(clause) &&
+          Object.keys(clause).length === 1 &&
+          Array.isArray(clause["required"]) &&
+          clause["required"].length === 1 &&
+          typeof clause["required"][0] === "string"
+      )
+    )
+      return;
+    const properties: JsonObject = {};
+    for (const clause of clauses) {
+      if (!isJsonObject(clause)) return;
+      const name = optionalArray(clause, "required")?.[0];
+      if (typeof name !== "string") return;
+      properties[name] = false;
+    }
+    // 接听/结束是稀疏更新；not(anyOf required) 中的每个字段都必须缺省。
+    constraint = { type: "object", properties };
+  } else return;
+  delete schema["not"];
+  schema["allOf"] = [...(optionalArray(schema, "allOf") ?? []), constraint];
+}
+
+function intersectSharedAlternatives(schema: JsonObject): void {
+  if (schema["properties"] === undefined) return;
+  for (const kind of ["anyOf", "oneOf"]) {
+    const branches = optionalArray(schema, kind);
+    if (branches === undefined) continue;
+    const sharedProperties = optionalObject(schema, "properties") ?? {};
+    for (const branch of branches) {
+      if (!isJsonObject(branch)) continue;
+      const properties = optionalObject(branch, "properties") ?? {};
+      for (const name of optionalArray(branch, "required") ?? []) {
+        if (
+          typeof name === "string" &&
+          properties[name] === undefined &&
+          sharedProperties[name] !== undefined
+        )
+          properties[name] = clone(sharedProperties[name]);
+      }
+      // required 可以引用共同字段；补入类型副本避免生成器漏掉分支上的必填要求。
+      if (Object.keys(properties).length > 0) branch["properties"] = properties;
+    }
+    Reflect.deleteProperty(schema, kind);
+    const shared = { ...schema };
+    for (const key of Object.keys(schema)) Reflect.deleteProperty(schema, key);
+    // 共同字段与候选分支必须相交；否则生成器会接受没有 type 的媒体或没有 id 的 member 提及。
+    schema["allOf"] = [shared, { [kind]: branches }];
+  }
+}
+
+interface LiteralCondition {
+  readonly path: readonly string[];
+  readonly literal: JsonPrimitive;
+}
+
+function literalCondition(value: JsonObject): LiteralCondition | undefined {
+  // 只降低单一常量判别条件，其他 JSON Schema 条件仍由运行时验证器负责。
+  if (
+    Object.keys(value).some(
+      (key) => !["type", "properties", "required", "additionalProperties"].includes(key)
+    )
+  )
+    return undefined;
+  const entries = Object.entries(optionalObject(value, "properties") ?? {});
+  if (entries.length !== 1) return undefined;
+  const entry = entries[0];
+  if (entry === undefined || !isJsonObject(entry[1])) return undefined;
+  const [name, field] = entry;
+  const literal = field["const"];
+  if (
+    literal === null ||
+    typeof literal === "boolean" ||
+    typeof literal === "number" ||
+    typeof literal === "string"
+  ) {
+    if (Object.keys(field).some((key) => !["const", "type"].includes(key))) return undefined;
+    return { path: [name], literal };
+  }
+  const child = literalCondition(field);
+  return child === undefined ? undefined : { path: [name, ...child.path], literal: child.literal };
+}
+
+function requiredFieldAt(
+  document: OpenApiDocument,
+  schema: JsonObject,
+  path: readonly string[]
+): JsonObject | undefined {
+  let current = schema;
+  for (const key of path) {
+    current = resolveObject(document, current);
+    if (!(optionalArray(current, "required") ?? []).includes(key)) return undefined;
+    const field = optionalObject(current, "properties")?.[key];
+    if (!isJsonObject(field)) return undefined;
+    current = field;
+  }
+  return resolveObject(document, current);
+}
+
+function typeConditionBranch(
+  schema: JsonObject,
+  condition: LiteralCondition,
+  values: JsonValue[],
+  raw: JsonObject
+): JsonObject {
+  let guard: JsonObject = { enum: values };
+  for (const key of [...condition.path].reverse()) {
+    guard = { type: "object", required: [key], properties: { [key]: guard } };
+  }
+  const constraint = clone(raw);
+  if (constraint["required"] !== undefined || constraint["properties"] !== undefined) {
+    constraint["type"] = "object";
+    const properties = optionalObject(constraint, "properties") ?? {};
+    const baseProperties = optionalObject(schema, "properties") ?? {};
+    for (const name of optionalArray(constraint, "required") ?? []) {
+      if (
+        typeof name === "string" &&
+        properties[name] === undefined &&
+        baseProperties[name] !== undefined
+      )
+        properties[name] = clone(baseProperties[name]);
+    }
+    constraint["properties"] = properties;
+  }
+  return { allOf: [guard, constraint] };
+}
+
+function lowerFiniteConditionals(schema: JsonObject, document: OpenApiDocument): void {
+  const clauses = optionalArray(schema, "allOf");
+  if (clauses === undefined) return;
+  schema["allOf"] = clauses.map((clause) => {
+    if (!isJsonObject(clause)) return clause;
+    const predicate = optionalObject(clause, "if");
+    const then = optionalObject(clause, "then");
+    if (predicate === undefined || then === undefined) return clause;
+    const condition = literalCondition(predicate);
+    if (condition === undefined) return clause;
+    const field = requiredFieldAt(document, schema, condition.path);
+    if (field === undefined) return clause;
+    const domain = field["type"] === "boolean" ? [false, true] : optionalArray(field, "enum");
+    if (!domain?.includes(condition.literal)) return clause;
+    const remaining = domain.filter((value) => value !== condition.literal);
+    if (remaining.length === 0) return clause;
+    // if/then 会被 openapi-typescript 忽略；有限且必填的判别字段可等价转换为联合分支。
+    return {
+      oneOf: [
+        typeConditionBranch(schema, condition, [condition.literal], then),
+        typeConditionBranch(schema, condition, remaining, optionalObject(clause, "else") ?? {})
+      ]
+    };
+  });
 }
 
 function parseJsonObject(source: string, description: string): JsonObject {
@@ -626,6 +850,37 @@ function generatedHeader(source: string): string {
   return `/**\n * 此文件由 \`pnpm generate\` 根据 ${source} 生成。\n * 生成边界用于保证契约、SDK 与 MCP 同步；请修改来源契约或生成器，不要手工编辑。\n */\n`;
 }
 
+function generateWebhookExamples(document: OpenApiDocument): string {
+  const entries: string[] = [];
+  for (const [name, rawItem] of Object.entries(optionalObject(document, "webhooks") ?? {})) {
+    const item = resolveObject(document, rawItem);
+    const post = optionalObject(item, "post");
+    const body = optionalObject(post, "requestBody");
+    if (body === undefined) continue;
+    const media = optionalObject(
+      optionalObject(resolveObject(document, body), "content"),
+      "application/json"
+    );
+    if (media === undefined) continue;
+    const examples: JsonValue[] = [];
+    if (media["example"] !== undefined) examples.push(media["example"]);
+    for (const raw of Object.values(optionalObject(media, "examples") ?? {})) {
+      const example = resolveObject(document, raw);
+      if (example["value"] !== undefined) examples.push(example["value"]);
+    }
+    if (examples.length > 0)
+      entries.push(
+        `${JSON.stringify(name)}: ${JSON.stringify(examples, null, 2)} satisfies WebhookBody<DeviceApiWebhooks[${JSON.stringify(name)}]>[]`
+      );
+  }
+  // 公共回调示例也必须经过 TypeScript 检查，避免只验证 HTTP 方法而遗漏接收类型。
+  return `${generatedHeader("contracts/device.openapi.yaml")}
+import type { DeviceApiWebhooks } from "../../src/index.js";
+type WebhookBody<T> = T extends { post: { requestBody: { content: { "application/json": infer Body } } } } ? Body : never;
+export const webhookExamples = { ${entries.join(",\n")} };
+`;
+}
+
 function generateCatalog(
   api: ApiDefinition,
   operations: readonly OperationDescriptor[],
@@ -815,14 +1070,24 @@ export async function generateArtifacts(): Promise<ReadonlyMap<string, string>> 
     const source = await readFile(resolve(ROOT, api.contract), "utf8");
     const document = parseOpenApiDocument(source, api.contract);
     const operations = collectOperations(api, document);
-    const typeAst = await openapiTS(document, {
+    const typeAst = await openapiTS(typeGenerationDocument(document), {
       alphabetize: true,
+      // 服务端默认值不意味着请求必填，例如评论查询允许省略 limit。
+      defaultNonNullable: false,
       // openapi-fetch 0.17 的 Readable helper 会把 readonly array 展开成对象；保留 mutable array 才能维持响应类型。
       immutable: false
     });
     artifacts.set(api.schemaOutput, `${generatedHeader(api.contract)}${astToString(typeAst)}`);
     artifacts.set(api.catalogOutput, generateCatalog(api, operations, document));
     artifacts.set(api.clientOutput, generateClient(api, operations));
+    const examplePath = "packages/sdk/tests/generated/webhook-examples.ts";
+    artifacts.set(
+      examplePath,
+      await format(generateWebhookExamples(document), {
+        ...(await resolveConfig(resolve(ROOT, examplePath))),
+        filepath: resolve(ROOT, examplePath)
+      })
+    );
     apiResults.push({ api, operations, document });
   }
 

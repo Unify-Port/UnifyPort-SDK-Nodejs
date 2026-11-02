@@ -413,6 +413,7 @@ function requestIdFrom(value: unknown, response: Response): string | undefined {
 
 interface ParsedErrorPayload {
   readonly code: string;
+  readonly numericCode?: string;
   readonly message: string;
   readonly requestId: string | undefined;
   readonly details: undefined;
@@ -428,9 +429,14 @@ function parseErrorPayload(value: unknown, response: Response): ParsedErrorPaylo
   if (!isRecord(value)) return fallback;
   const nested = isRecord(value["error"]) ? value["error"] : value;
   const code = readDiagnostic(nested, "code", 64) ?? fallback.code;
+  // 只允许公开契约的五位数字字符串，避免错误元数据回显任意上游内容。
+  const numericCode = nested["numeric_code"];
   return {
     code,
-    // 上游 message/details 可能回显请求参数；错误对象只公开稳定 code/status/request ID。
+    ...(typeof numericCode === "string" && /^[1-9][0-9]{4}$/u.test(numericCode)
+      ? { numericCode }
+      : {}),
+    // 上游 message/details 可能回显请求参数；只公开筛选后的错误码和 HTTP/request ID 元数据。
     message: `UnifyPort API 返回 ${code} (HTTP ${String(response.status)})`,
     requestId: requestIdFrom(value, response),
     details: undefined
@@ -594,6 +600,7 @@ function unwrap<T>(
     operationId: operation.operationId,
     status: outcome.response.status,
     code: parsed.code,
+    ...(parsed.numericCode === undefined ? {} : { numericCode: parsed.numericCode }),
     requestId: parsed.requestId,
     details: parsed.details
   });

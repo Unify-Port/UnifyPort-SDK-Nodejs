@@ -33,7 +33,7 @@ function workspaceJson(quota = "5"): string {
 
 describe("generated operation coverage", () => {
   it("keeps every source operation as an explicit method", () => {
-    expect(Object.keys(deviceOperations)).toHaveLength(64);
+    expect(Object.keys(deviceOperations)).toHaveLength(78);
 
     const fetch: UnifyPortFetch = async () => jsonResponse({});
     const device = new UnifyPortDeviceClient({
@@ -151,17 +151,17 @@ describe("generated operation coverage", () => {
     expect(Reflect.get(sendResult, "required")).not.toContain("reply_token");
   });
 
-  it("preserves paired message receipt fields in generated metadata", () => {
-    // 字段依赖必须进入发布 metadata，避免下游工具只看到两个互不相关的可选字段。
+  it("keeps read receipt validation channel-specific", () => {
+    // Telegram 只需要消息 ID，不能继续使用 WhatsApp 的无条件配对校验。
     expect(deviceOperations.markConversationRead.inputSchema).toMatchObject({
       $defs: {
         ConversationReadRequest: {
           allOf: [
             expect.any(Object),
             {
-              dependentRequired: {
-                up_to_message_id: ["up_to_message_sender_id"],
-                up_to_message_sender_id: ["up_to_message_id"]
+              properties: {
+                up_to_message_id: { type: "string" },
+                up_to_message_sender_id: { type: "string" }
               }
             }
           ]
@@ -174,8 +174,19 @@ describe("generated operation coverage", () => {
     // 精确枚举可防止内部 provider 重新进入公开类型，也避免历史事件在生成时丢失。
     expect(deviceOperations.createAccount.inputSchema).toMatchObject({
       $defs: {
-        ProviderName: {
-          enum: ["telegram", "whatsapp", "line", "twitter", "x", "zalo", "tiktok"]
+        ProviderInputName: {
+          enum: [
+            "telegram",
+            "whatsapp",
+            "line",
+            "twitter",
+            "zalo",
+            "tiktok",
+            "whatsapp-protocol",
+            "x",
+            "x_client",
+            "twitter_client"
+          ]
         }
       }
     });
@@ -184,12 +195,17 @@ describe("generated operation coverage", () => {
         StandardEventType: {
           enum: [
             "*",
+            "contact.updated",
+            "post.comment.created",
             "message.received",
             "message.updated",
             "message.deleted",
             "message.read",
             "message.reaction",
             "message.delivered",
+            "call.incoming",
+            "call.answered",
+            "call.ended",
             "conversation.updated",
             "conversation.deleted",
             "conversation.cleared",
@@ -197,6 +213,7 @@ describe("generated operation coverage", () => {
             "group.updated",
             "group.join_request",
             "account.status.updated",
+            "account.profile.updated",
             "account.started",
             "account.history.synced",
             "account.auth.required",

@@ -1,7 +1,9 @@
 /** Device API 子路径导出 X-Api-Key 客户端与对应公开契约。 */
 export { UnifyPortDeviceClient } from "../generated/device/client.js";
 export { deviceOperations } from "../generated/device/operation-catalog.js";
-export type { components, operations, paths } from "../generated/device/schema.js";
+// Webhook 是接收端契约，单独导出类型而不生成客户端调用方法。
+export type { components, paths, webhooks } from "../generated/device/schema.js";
+export type { DeviceHttpOperations as operations } from "../core/contract-types.js";
 export type {
   ApiResult,
   DeviceClientConfig,

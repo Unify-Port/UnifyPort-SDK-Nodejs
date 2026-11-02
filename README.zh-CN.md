@@ -8,6 +8,8 @@ Server，以及供自动化代理复用的公开 skills。
 `@unifyport/sdk-node` 采用 MIT 许可证并通过 npm 公开发布；`@unifyport/mcp-server` 仍保持
 `private: true`，在 MCP 的独立发布策略明确前不进入 registry。
 
+当前工作源码覆盖 78 个 HTTP 操作和 24 种标准 Webhook 事件。本次更新尚未发布，现有 npm 版本不包含这些变化。详见[迁移说明](docs/zh-CN/release-notes.md)和 [Webhook 处理](docs/zh-CN/webhook-contract.md)。
+
 ## 能力与边界
 
 | 资产                    | 作用                                        | 关键边界                     |

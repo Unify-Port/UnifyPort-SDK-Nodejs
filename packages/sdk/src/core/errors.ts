@@ -69,6 +69,7 @@ export class UnifyPortPaginationError extends UnifyPortError {}
 interface ApiErrorContext extends ErrorContext {
   readonly status: number;
   readonly code: string;
+  readonly numericCode?: string;
   readonly requestId: string | undefined;
   readonly details?: unknown;
 }
@@ -76,6 +77,8 @@ interface ApiErrorContext extends ErrorContext {
 export class UnifyPortApiError extends UnifyPortError {
   public readonly status: number;
   public readonly code: string;
+  /** 数字码是字符串分类，不参与数值计算；旧响应缺失时保留 undefined。 */
+  public readonly numericCode: string | undefined;
   public readonly requestId: string | undefined;
   public readonly details: unknown;
 
@@ -83,6 +86,7 @@ export class UnifyPortApiError extends UnifyPortError {
     super(message, context);
     this.status = context.status;
     this.code = context.code;
+    this.numericCode = context.numericCode;
     this.requestId = context.requestId;
     this.details = context.details;
   }
