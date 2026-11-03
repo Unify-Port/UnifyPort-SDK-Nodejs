@@ -1521,6 +1521,86 @@ export interface webhooks {
         patch?: never;
         trace?: never;
     };
+    facebookAccountAuthFailed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * account.auth.failed (Facebook)
+         * @description Facebook 标准回调；是否可用以接入环境开放情况为准，不代表真实账号投递已验收。
+         */
+        post: operations["receiveFacebookAccountAuthFailedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    facebookAccountAuthSucceeded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * account.auth.succeeded (Facebook)
+         * @description Facebook 标准回调；是否可用以接入环境开放情况为准，不代表真实账号投递已验收。
+         */
+        post: operations["receiveFacebookAccountAuthSucceededWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    facebookAccountStatusUpdated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * account.status.updated (Facebook)
+         * @description Facebook 标准回调；是否可用以接入环境开放情况为准，不代表真实账号投递已验收。
+         */
+        post: operations["receiveFacebookAccountStatusUpdatedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    facebookMessageReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * message.received (Facebook)
+         * @description Facebook 标准回调；是否可用以接入环境开放情况为准，不代表真实账号投递已验收。
+         */
+        post: operations["receiveFacebookMessageReceivedWebhookEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     groupSettingsUpdated: {
         parameters: {
             query?: never;
@@ -2951,6 +3031,200 @@ export interface components {
         ErrorEnvelope: components["schemas"]["ResponseMeta"] & {
             error: components["schemas"]["Error"];
         };
+        FacebookAccountAuthFailedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                /** @enum {string} */
+                auth_status: "failed";
+                event?: {
+                    kind?: string;
+                    runtime_status?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                last_error?: string;
+                /** @enum {string} */
+                runtime_status: "disconnected";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 不透明事件 ID；重试保留原值，SDK 不重算。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "facebook";
+            /** @enum {string} */
+            type: "account.auth.failed";
+        } & {
+            [key: string]: unknown;
+        };
+        FacebookAccountAuthSucceededWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                /** @enum {string} */
+                auth_status: "authorized";
+                event?: {
+                    kind?: string;
+                    runtime_status?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                /** @enum {string} */
+                runtime_status: "running";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 不透明事件 ID；重试保留原值，SDK 不重算。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "facebook";
+            /** @enum {string} */
+            type: "account.auth.succeeded";
+        } & {
+            [key: string]: unknown;
+        };
+        FacebookAccountStatusUpdatedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                event?: {
+                    kind?: string;
+                    runtime_status?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                last_error?: string;
+                /** @enum {string} */
+                runtime_status: "error";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 不透明事件 ID；重试保留原值，SDK 不重算。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "facebook";
+            /** @enum {string} */
+            type: "account.status.updated";
+        } & {
+            [key: string]: unknown;
+        };
+        FacebookAttachmentMetadata: {
+            animated?: boolean;
+            /** @enum {string} */
+            download_status?: "pending" | "ready" | "failed" | "restricted" | "expired" | "unavailable";
+            /**
+             * Format: double
+             * @description 原生媒体时长，单位尚未确认；不得按 duration_ms 解读或转换。
+             */
+            duration?: number;
+            error_code?: string;
+            filename?: string;
+            /** Format: double */
+            height?: number;
+            preview_error_code?: string;
+            preview_upload_error_code?: string;
+            ptt?: boolean;
+            sticker_id?: string;
+            upload_error_code?: string;
+            /** Format: double */
+            width?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description 普通文本和媒体消息省略 type，单个无正文贴纸可为 sticker。ID 是字符串；reply_to_message_id 不表示支持引用发送。 */
+        FacebookMessage: {
+            attachments?: components["schemas"]["FacebookMessageAttachment"][];
+            /** @enum {string} */
+            direction: "inbound" | "outbound";
+            id: string;
+            reply_to_message_id?: string;
+            /** Format: date-time */
+            sent_at?: string;
+            text?: string;
+            /** @enum {string} */
+            type?: "sticker";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description FB 单条消息中的有序附件。媒体 URL 可缺失；加密或下载失败的地址不作为可用明文地址。 */
+        FacebookMessageAttachment: {
+            description?: string;
+            id?: string;
+            metadata?: components["schemas"]["FacebookAttachmentMetadata"];
+            mimetype?: string;
+            size?: number;
+            /** Format: uri */
+            thumbnail_url?: string;
+            title?: string;
+            /** @enum {string} */
+            type: "image" | "video" | "audio" | "document";
+            /** Format: uri */
+            url?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        FacebookMessageReceivedWebhookEvent: {
+            account_id: string;
+            data: {
+                account?: {
+                    provider_account_ref?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                conversation: {
+                    id: string;
+                    /** @enum {string} */
+                    type: "user";
+                } & {
+                    [key: string]: unknown;
+                };
+                event?: {
+                    kind?: string;
+                    runtime_status?: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                message: components["schemas"]["FacebookMessage"];
+                sender: {
+                    id: string;
+                    /** @enum {string} */
+                    type: "user";
+                } & {
+                    [key: string]: unknown;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description 不透明事件 ID；重试保留原值，SDK 不重算。 */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** @enum {string} */
+            provider: "facebook";
+            /** @enum {string} */
+            type: "message.received";
+        } & {
+            [key: string]: unknown;
+        };
         FreeFormObject: {
             [key: string]: unknown;
         };
@@ -4134,12 +4408,12 @@ export interface components {
          * @description provider 输入名称。兼容 `x`、`x_client`、`twitter_client`，这些输入会归一化为 `twitter` 并以 `twitter` 输出；Webhook URL path 不适用该别名规则。
          * @enum {string}
          */
-        ProviderInputName: "telegram" | "whatsapp" | "line" | "twitter" | "zalo" | "tiktok" | "whatsapp-protocol" | "x" | "x_client" | "twitter_client";
+        ProviderInputName: "telegram" | "whatsapp" | "line" | "twitter" | "facebook" | "zalo" | "tiktok" | "whatsapp-protocol" | "x" | "x_client" | "twitter_client";
         /**
          * @description 响应输出的 canonical provider 名称。`whatsapp-protocol` 仅支持 session，本期支持 text 和 image，以及联系人详情；不支持 reply、mentions、联系人列表及写动作、会话或群组能力。
          * @enum {string}
          */
-        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "zalo" | "tiktok" | "whatsapp-protocol";
+        ProviderName: "telegram" | "whatsapp" | "line" | "twitter" | "facebook" | "zalo" | "tiktok" | "whatsapp-protocol";
         /** @description 账号在渠道侧的资料。下列为标准字段，其他字段因渠道而异。 */
         ProviderProfile: {
             /** @description 账号头像 URL。 */
@@ -7697,6 +7971,94 @@ export interface operations {
         };
         responses: {
             /** @description 业务方已可靠接收本次事件，重复投递也应幂等接受；不表示全部历史已完成。 */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveFacebookAccountAuthFailedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FacebookAccountAuthFailedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveFacebookAccountAuthSucceededWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FacebookAccountAuthSucceededWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveFacebookAccountStatusUpdatedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FacebookAccountStatusUpdatedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
+            "2XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    receiveFacebookMessageReceivedWebhookEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FacebookMessageReceivedWebhookEvent"];
+            };
+        };
+        responses: {
+            /** @description Accepted. */
             "2XX": {
                 headers: {
                     [name: string]: unknown;

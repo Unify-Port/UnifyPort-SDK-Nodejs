@@ -37,6 +37,8 @@ const DOCUMENTATION_LOCALES = [
 
 // 手写文档采用显式清单；新增公开说明时必须主动决定是否需要双语版本。
 const BILINGUAL_DOCUMENTS = [
+  // 渠道能力限制也属于客户契约，必须与两种语言的接入说明一起检查。
+  ["docs/facebook.md", "docs/zh-CN/facebook.md"],
   ["docs/webhook-contract.md", "docs/zh-CN/webhook-contract.md"],
   ["AGENTS.md", "AGENTS.zh-CN.md"],
   ["README.md", "README.zh-CN.md"],

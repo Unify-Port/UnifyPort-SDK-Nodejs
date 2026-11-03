@@ -211,3 +211,5 @@ unifyport-sdk-node/
 
 新增 API 前先完成认证、副作用、retry、secret、destructive、JavaScript `uint64` 与 MCP
 exposure 分类。无法证明安全时，SDK 不自动重试，MCP 采用不暴露的保守默认值。
+
+[Facebook 渠道支持](docs/zh-CN/facebook.md)说明 session 授权、能力边界和标准回调。

@@ -2,6 +2,17 @@ import type { ApiReferenceSource, OpenApiJsonObject, OpenApiJsonValue } from "./
 
 // 公开契约保留现有中文说明；英文目录只维护一份扁平翻译表，避免复制 OpenAPI 结构后发生协议漂移。
 const ENGLISH_CONTRACT_TEXT: Readonly<Record<string, string>> = {
+  // FB 描述与公开字段同步翻译，避免生成英文参考时遗漏渠道边界。
+  "Facebook 标准回调；是否可用以接入环境开放情况为准，不代表真实账号投递已验收。":
+    "Facebook standard callback. Availability depends on the integration environment; this is not evidence of real-account delivery acceptance.",
+  "原生媒体时长，单位尚未确认；不得按 duration_ms 解读或转换。":
+    "Native media duration with an unconfirmed unit. Do not interpret or convert it as duration_ms.",
+  "FB 单条消息中的有序附件。媒体 URL 可缺失；加密或下载失败的地址不作为可用明文地址。":
+    "Ordered attachments in one Facebook message. Media URLs may be absent; encrypted or failed-download addresses are not usable plaintext URLs.",
+  "普通文本和媒体消息省略 type，单个无正文贴纸可为 sticker。ID 是字符串；reply_to_message_id 不表示支持引用发送。":
+    "Ordinary text and media messages omit type; a single sticker without text may use sticker. IDs are strings; reply_to_message_id does not imply support for sending replies.",
+  "不透明事件 ID；重试保留原值，SDK 不重算。":
+    "Opaque event ID. Retries retain the original value; the SDK does not recompute it.",
   "@ 目标。`type` 缺省时按 `member` 处理，以兼容旧请求； `type=member` 必须传 `id`，`type=all` 不传 `id` 且仅适用于群聊。":
     "Mention target. Omitted type defaults to member for compatibility. member requires id; all omits id and is group-only.",
   "API Key public_id，例如 `ak_xxx`。": "The API key `public_id`, for example `ak_xxx`.",

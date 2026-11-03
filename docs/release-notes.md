@@ -2,6 +2,10 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
+## Unreleased - Facebook
+
+Adds the facebook provider enum and four typed receiver declarations with eight synthetic examples. The HTTP operation set and 24 standard event names, authentication, retry and MCP policies remain unchanged. Exhaustive provider switches must handle facebook. See [Facebook](facebook.md). No package publication or deployment is implied.
+
 ## Unreleased - public contract synchronization
 
 The working source covers 78 HTTP operations and 24 standard event types, plus the subscription wildcard. No version, tag or registry release is created.

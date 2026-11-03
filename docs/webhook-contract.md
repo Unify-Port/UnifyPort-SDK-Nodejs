@@ -12,7 +12,7 @@ type CallRecordUpdate = DeviceApiComponents["schemas"]["CallMessageUpdatedWebhoo
 type IncomingCallContract = DeviceApiWebhooks["callIncoming"];
 ```
 
-`DeviceApiOperations` remains the map of callable HTTP operations; receiver declarations are kept in `DeviceApiWebhooks`. The public contract currently declares 36 specialized Webhook shapes, and supplies 49 examples across 25 of them. All supplied examples are generated into TypeScript checks. The 24 event names are the subscription catalog; they do not imply a complete specialized payload schema for every generic event.
+`DeviceApiOperations` remains the map of callable HTTP operations; receiver declarations are kept in `DeviceApiWebhooks`. The public contract currently declares 40 specialized Webhook shapes, and supplies 57 examples across 29 of them. All supplied examples are generated into TypeScript checks. The 24 event names are the subscription catalog; they do not imply a complete specialized payload schema for every generic event.
 
 Types do not validate untrusted HTTP bodies. Finite state branches and forbidden sparse-update fields are preserved in the generated types, while numeric ranges, string formats and other cross-field conditions still require runtime validation. Verify and validate requests at the receiving boundary before using these types. Declared payload schemas and request examples are in the [public contract](../contracts/device.openapi.yaml).
 
@@ -35,3 +35,5 @@ Deduplicate events by top-level `id`, and associate message changes by provider,
 Call lifecycle events use `voice/video`, beta eligibility and matching subscriptions. Incoming calls are currently unavailable. A call preparation response is not proof of dialing; `join_url` and hosted `authorize_url` are short-lived secrets. Keep them out of logs and model input. `message.*` call records are independent and use `audio/video` with sparse updates. Merge nested call fields individually and keep terminal precedence `ended > accepted > offered`; late acceptance can add facts/time but cannot reopen an ended call. Missing acceptance is unknown, not proof of a missed call.
 
 Independent account endpoints entirely override workspace endpoints. Inactive or nonmatching account configuration does not fall back; deleting its last endpoint restores inheritance for subsequent initial deliveries. Endpoint ownership cannot be changed through PATCH. Empty/omitted/wildcard subscriptions include authorized events; explicit lists include listed names only. Beta call eligibility is checked on delivery/retry, and wildcard subscriptions do not grant beta access.
+
+[Facebook channel semantics and examples](facebook.md).
