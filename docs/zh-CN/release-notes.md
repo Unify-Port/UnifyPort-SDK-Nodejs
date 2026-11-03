@@ -2,6 +2,10 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
+## 未发布 - Facebook
+
+新增 facebook 渠道枚举、四个接收类型声明及八个合成示例。HTTP operation 集合、24 个标准事件名、认证、重试和 MCP 策略保持不变。穷举 provider 的分支需处理 facebook。详见 [Facebook](facebook.md)。不表示包已发布或服务已部署。
+
 ## 未发布 - 公开契约同步
 
 当前工作源码覆盖 78 个 HTTP 操作、24 种标准事件及订阅通配符。不创建版本、tag 或 Registry 发布。

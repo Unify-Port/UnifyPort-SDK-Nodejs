@@ -171,7 +171,7 @@ describe("generated operation coverage", () => {
   });
 
   it("keeps public provider and webhook event enums aligned", () => {
-    // 精确枚举可防止内部 provider 重新进入公开类型，也避免历史事件在生成时丢失。
+    // 精确枚举保留历史渠道并纳入 FB，避免生成时丢失渠道或标准事件。
     expect(deviceOperations.createAccount.inputSchema).toMatchObject({
       $defs: {
         ProviderInputName: {
@@ -180,6 +180,7 @@ describe("generated operation coverage", () => {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol",

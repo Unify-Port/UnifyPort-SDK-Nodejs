@@ -10,6 +10,253 @@ type WebhookBody<T> = T extends {
   ? Body
   : never;
 export const webhookExamples = {
+  facebookMessageReceived: [
+    {
+      id: "evt_facebook_example_1",
+      type: "message.received",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        conversation: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        sender: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        message: {
+          id: "9007199254740993",
+          direction: "inbound",
+          text: "Hello",
+          sent_at: "2026-01-01T00:00:00.123456789Z",
+          reply_to_message_id: "9007199254740991"
+        },
+        event: {
+          kind: "message_received"
+        }
+      }
+    },
+    {
+      id: "evt_facebook_example_2",
+      type: "message.received",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        conversation: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        sender: {
+          id: "9007199254740997",
+          type: "user"
+        },
+        message: {
+          id: "9007199254740994",
+          direction: "outbound",
+          text: ""
+        },
+        event: {
+          kind: "message_received"
+        }
+      }
+    },
+    {
+      id: "evt_facebook_example_3",
+      type: "message.received",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        conversation: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        sender: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        message: {
+          id: "9007199254740996",
+          direction: "inbound",
+          attachments: [
+            {
+              id: "image_example",
+              type: "image",
+              url: "https://media.example.com/image.jpg",
+              thumbnail_url: "https://media.example.com/preview.jpg",
+              size: 0,
+              metadata: {
+                filename: "example.jpg",
+                width: 0,
+                height: 0,
+                animated: false,
+                download_status: "ready"
+              }
+            },
+            {
+              id: "audio_example",
+              type: "audio",
+              metadata: {
+                duration: 0,
+                ptt: false,
+                download_status: "failed",
+                error_code: "download_failed"
+              }
+            }
+          ]
+        },
+        event: {
+          kind: "message_received"
+        }
+      }
+    },
+    {
+      id: "evt_facebook_example_4",
+      type: "message.received",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        conversation: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        sender: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        message: {
+          id: "9007199254740998",
+          direction: "inbound",
+          type: "sticker",
+          attachments: [
+            {
+              type: "image",
+              metadata: {
+                sticker_id: "sticker_example",
+                animated: false
+              }
+            }
+          ]
+        },
+        event: {
+          kind: "message_received"
+        }
+      }
+    },
+    {
+      id: "evt_facebook_example_5",
+      type: "message.received",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        conversation: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        sender: {
+          id: "9007199254740995",
+          type: "user"
+        },
+        message: {
+          id: "9007199254740999",
+          direction: "inbound",
+          attachments: [
+            {
+              type: "document",
+              metadata: {
+                filename: "example.pdf",
+                download_status: "restricted"
+              }
+            }
+          ]
+        },
+        event: {
+          kind: "message_received"
+        }
+      }
+    }
+  ] satisfies WebhookBody<DeviceApiWebhooks["facebookMessageReceived"]>[],
+  facebookAccountAuthSucceeded: [
+    {
+      id: "evt_facebook_example_6",
+      type: "account.auth.succeeded",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        event: {
+          kind: "account_auth_succeeded",
+          runtime_status: "running"
+        },
+        runtime_status: "running",
+        auth_status: "authorized"
+      }
+    }
+  ] satisfies WebhookBody<DeviceApiWebhooks["facebookAccountAuthSucceeded"]>[],
+  facebookAccountStatusUpdated: [
+    {
+      id: "evt_facebook_example_7",
+      type: "account.status.updated",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        event: {
+          kind: "account_status_updated",
+          runtime_status: "error"
+        },
+        runtime_status: "error",
+        last_error: "network_timeout"
+      }
+    }
+  ] satisfies WebhookBody<DeviceApiWebhooks["facebookAccountStatusUpdated"]>[],
+  facebookAccountAuthFailed: [
+    {
+      id: "evt_facebook_example_8",
+      type: "account.auth.failed",
+      provider: "facebook",
+      account_id: "acc_example",
+      occurred_at: "2026-01-01T00:00:00.123456789Z",
+      data: {
+        account: {
+          provider_account_ref: "9007199254740997"
+        },
+        event: {
+          kind: "account_auth_failed",
+          runtime_status: "disconnected"
+        },
+        runtime_status: "disconnected",
+        auth_status: "failed",
+        last_error: "cookie_expired"
+      }
+    }
+  ] satisfies WebhookBody<DeviceApiWebhooks["facebookAccountAuthFailed"]>[],
   contactUpdated: [
     {
       id: "evt_example_127019",

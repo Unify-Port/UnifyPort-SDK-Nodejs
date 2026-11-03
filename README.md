@@ -223,3 +223,5 @@ unifyport-sdk-node/
 Before adding an API, classify its authentication, side effects, retry behavior, secret handling,
 destructive behavior, JavaScript `uint64` handling, and MCP exposure. When safety cannot be demonstrated,
 the SDK does not retry automatically and the MCP server defaults to not exposing the operation.
+
+[Facebook channel support](docs/facebook.md) documents session authorization, capabilities and standard callbacks.

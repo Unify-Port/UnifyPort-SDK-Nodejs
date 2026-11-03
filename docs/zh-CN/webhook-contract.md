@@ -12,7 +12,7 @@ type CallRecordUpdate = DeviceApiComponents["schemas"]["CallMessageUpdatedWebhoo
 type IncomingCallContract = DeviceApiWebhooks["callIncoming"];
 ```
 
-`DeviceApiOperations` 继续只包含可调用的 HTTP 操作，接收声明放在 `DeviceApiWebhooks`。公开契约当前声明 36 种专门的 Webhook 结构，其中 25 种提供了共 49 个示例；已有示例全部进入生成的 TypeScript 检查。24 种事件名是订阅目录，不表示每个通用事件都有完整的专门载荷 schema。
+`DeviceApiOperations` 继续只包含可调用的 HTTP 操作，接收声明放在 `DeviceApiWebhooks`。公开契约当前声明 40 种专门的 Webhook 结构，其中 29 种提供了共 57 个示例；已有示例全部进入生成的 TypeScript 检查。24 种事件名是订阅目录，不表示每个通用事件都有完整的专门载荷 schema。
 
 类型不验证不可信 HTTP 请求体。生成类型保留有限状态分支和稀疏更新禁用字段；数值范围、字符串格式及其他跨字段条件仍需运行时校验。接收端应先验签和校验，再使用这些类型。已声明的载荷 schema 与请求示例见[公开契约](../../contracts/device.openapi.yaml)。
 
@@ -35,3 +35,5 @@ type IncomingCallContract = DeviceApiWebhooks["callIncoming"];
 通话生命周期事件使用 `voice/video`，受内测资格和订阅控制；呼入暂未开放。准备成功不代表已拨号；`join_url` 和托管 `authorize_url` 是短期敏感链接，不进入日志或模型输入。独立的 `message.*` 通话记录使用 `audio/video` 和稀疏更新。嵌套 call 逐字段合并，终态优先级为 `ended > accepted > offered`；迟到接听只补事实与时间，不恢复结束状态。未收到接听确认表示未知，不证明未接来电。
 
 账号独立端点整体覆盖工作空间端点。停用或未匹配订阅不回退；删除最后一个独立端点后，后续首次投递恢复继承。PATCH 不能改变归属。空、省略或通配订阅包含当前有权接收的事件，具体列表只包含列出的名称；通话资格在投递和重试时检查，通配订阅不授予内测资格。
+
+[Facebook 渠道语义和示例](facebook.md)。

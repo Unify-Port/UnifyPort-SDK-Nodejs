@@ -408,6 +408,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -656,6 +657,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol",
@@ -898,6 +900,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -1157,6 +1160,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -3100,6 +3104,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -5927,6 +5932,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -8009,6 +8015,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol",
@@ -8103,6 +8110,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -9359,6 +9367,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -9555,6 +9564,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -11609,6 +11619,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -11911,6 +11922,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -12107,6 +12119,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
@@ -13017,6 +13030,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol",
@@ -13259,6 +13273,7 @@ export const deviceOperations = {
             "whatsapp",
             "line",
             "twitter",
+            "facebook",
             "zalo",
             "tiktok",
             "whatsapp-protocol"
