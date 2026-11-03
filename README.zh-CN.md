@@ -10,6 +10,8 @@ Server，以及供自动化代理复用的公开 skills。
 
 当前工作源码覆盖 78 个 HTTP 操作和 24 种标准 Webhook 事件。本次更新尚未发布，现有 npm 版本不包含这些变化。详见[迁移说明](docs/zh-CN/release-notes.md)和 [Webhook 处理](docs/zh-CN/webhook-contract.md)。
 
+当前准备的 SDK 版本为 `0.5.0`，尚未发布。详见[发布说明](docs/zh-CN/release-notes.md)和[迁移指南](docs/zh-CN/migration.md)。
+
 ## 能力与边界
 
 | 资产                    | 作用                                        | 关键边界                     |

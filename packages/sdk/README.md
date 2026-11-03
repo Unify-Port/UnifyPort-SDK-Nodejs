@@ -9,6 +9,8 @@ cancellation, and cursor pagination.
 The SDK uses a fixed `X-Api-Key` authentication boundary. Operations under `/v1/accounts/...` belong to
 the Device API and are all available through `UnifyPortDeviceClient`.
 
+Prepared version: `0.5.0` (unreleased). This minor version includes breaking response/type changes; read the [release notes](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/release-notes.md) and [migration guide](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/migration.md) before upgrading.
+
 ## Features
 
 Every operation in the current public contract has a same-named SDK method. Major areas include:

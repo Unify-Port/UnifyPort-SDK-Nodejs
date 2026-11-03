@@ -11,6 +11,8 @@ defined.
 
 The working source covers 78 HTTP operations and 24 standard Webhook event types. These changes are unreleased; the existing npm version does not include them. See [migration notes](docs/release-notes.md) and [Webhook handling](docs/webhook-contract.md).
 
+Prepared SDK version: `0.5.0` (unreleased). See [release notes](docs/release-notes.md) and the [migration guide](docs/migration.md).
+
 ## Capabilities and boundaries
 
 | Asset                   | Purpose                                             | Key boundary                                |

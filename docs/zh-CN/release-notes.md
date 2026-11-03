@@ -2,24 +2,38 @@
 
 [English](../release-notes.md) | [简体中文](release-notes.md)
 
-## 未发布 - Facebook
+## 0.5.0 — 已准备，未发布
 
-新增 facebook 渠道枚举、四个接收类型声明及八个合成示例。HTTP operation 集合、24 个标准事件名、认证、重试和 MCP 策略保持不变。穷举 provider 的分支需处理 facebook。详见 [Facebook](facebook.md)。不表示包已发布或服务已部署。
+准备日期为 2026-11-03，不是发布日期。此 1.0 之前的 minor 版本包含相对 `0.4.0` 的响应/类型不兼容变化，升级前请阅读[迁移指南](migration.md)。
 
-## 未发布 - 公开契约同步
+### 变化
 
-当前工作源码覆盖 78 个 HTTP 操作、24 种标准事件及订阅通配符。不创建版本、tag 或 Registry 发布。
+- 同步 78 个 HTTP operation、225 个 component schema、24 个标准事件名及 `*`，提供 40 个专用 Webhook 接收方声明。57 个合成示例覆盖其中 29 个声明，不表示覆盖全部 40 个。
+- 新增账号操作查询、托管授权/Passkey、联系人/关系、按需历史、帖子/评论及受内测权限限制的通话。更新账号分页、创建/更新输入、异步删除、余额/QR 元数据和消息/Webhook 联合类型。
+- 新增 `facebook` provider、四个接收方声明和八个示例；Facebook 本身不新增 HTTP operation 或标准事件名。仅支持 session 授权及 E2EE 私聊的限制见 [Facebook](facebook.md)。
+- 保持认证、凭证过滤和 19 个操作的重试白名单；增加经过验证的五位字符串错误字段 `numericCode`，不暴露服务端正文。不启用新的自动写入重试或 MCP 能力。
 
-- 新增通话、计费操作查询、托管授权、Passkey、帖子及评论、按需历史、联系人添加及归属查询。
-- 账号列表改为 `data.items/has_more/next_cursor`，旧数组消费代码须迁移，游标原样传回。创建与更新使用独立输入。通过 `params.header` 传可选 `Idempotency-Key`，写操作仍不自动重试。删除可返回 202 JSON 或 204 空体，后者 data 为 undefined。
-- Telegram 已读不再强制携带 WhatsApp sender。同步授权步骤、运行提示、计费周期、额度使用量、账号独立端点及 WhatsApp Protocol 类型。
-- 可选 `UnifyPortApiError.numericCode` 仅保留验证通过的五位数字字符串，不暴露原始 message/details。
-- 消息联合类型支持 sticker/poll/link_preview 和 member/all 提及。载荷、稀疏合并与排序见 [Webhook 处理](webhook-contract.md)。
-- 新增操作不进入 MCP、不自动重试；POST 帖子及评论查询为 read，挂断为 destructive，授权/通话链接与 Passkey 载荷采用敏感策略。
-- 兼容性复查保证 `DeviceApiOperations` 和 `/device` 的 `operations` 导出只含 HTTP 操作；Webhook 接收操作通过 `DeviceApiWebhooks` 或 `/device` 的 `webhooks` 获取。
-- 生成类型保留候选载荷的共同字段、decoded/unavailable 投票分支、关闭的限时设置、取消置顶和通话稀疏更新规则。Webhook 示例也进入生成的 TypeScript 检查。
+### 版本与来源
 
-账号分页属于响应结构破坏性变化。原 `AccountRequest` 组件应按用途替换为 `AccountCreateRequest` 或 `AccountUpdateRequest`。创建必填字段及修正后的消息/Webhook 联合类型可能在编译期暴露旧调用的非法参数。采用前迁移调用代码。本地检查不证明部署或真实账号流程。
+工作区及 `packages/sdk/package.json` 均声明 `0.5.0`。`@unifyport/mcp-server` 保持 private 和独立版本 `0.1.0`，其发布策略不随 SDK 版本改变。
+
+契约来自已批准的公开 [Node 源码 ce60499](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/commit/ce60499)。该不可变基线的 package metadata 为 `0.4.0`，类型为 `approved-source`；保留这一来源，不宣称 npm `0.5.0` 已发布。
+
+支持环境：Node.js >=22.12.0，仅支持 ESM。
+
+### 验证与剩余门禁
+
+在源码目录运行：
+
+```bash
+pnpm check
+pnpm public:check
+git diff --check
+```
+
+审查精确 candidate diff 及包/归档内容，在干净 consumer 中安装本地产物并确认版本和公开 import。这些是准备门禁，不表示本说明中的命令或 release CI 已通过。
+
+本次准备不执行 tag、registry 发布、GitHub Release、部署或真实账号 E2E。最终已审查 release commit 必须通过 CI；受控 staging/provider E2E 和发布后的 registry/module 解析仍是独立门禁。发布前重跑具有时效性的漏洞检查；回退限制见[迁移指南](migration.md)。
 
 ## 0.4.0 - 2026-07-31
 
