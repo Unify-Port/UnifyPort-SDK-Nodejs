@@ -9,6 +9,8 @@
 SDK 使用固定的 `X-Api-Key` 认证边界。`/v1/accounts/...` operation 属于 Device API，统一由
 `UnifyPortDeviceClient` 提供。
 
+当前准备版本 `0.5.0`，尚未发布。此 minor 版本包含响应/类型不兼容变化；升级前阅读[发布说明](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/zh-CN/release-notes.md)和[迁移指南](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/blob/main/docs/zh-CN/migration.md)。
+
 ## 功能范围
 
 当前公开契约中的全部 operation 都有同名 SDK 方法，主要覆盖：

@@ -49,6 +49,8 @@ const BILINGUAL_DOCUMENTS = [
   ["docs/clawhub-publishing.md", "docs/zh-CN/clawhub-publishing.md"],
   ["docs/contract-maintenance.md", "docs/zh-CN/contract-maintenance.md"],
   ["docs/release-notes.md", "docs/zh-CN/release-notes.md"],
+  // 迁移路径属于发布契约，必须同时保留完整的中英文说明。
+  ["docs/migration.md", "docs/zh-CN/migration.md"],
   ["docs/security.md", "docs/zh-CN/security.md"],
   ["skills/unifyport-node-sdk/SKILL.md", "skills/unifyport-node-sdk/SKILL.zh-CN.md"],
   ["skills/unifyport-mcp/SKILL.md", "skills/unifyport-mcp/SKILL.zh-CN.md"]

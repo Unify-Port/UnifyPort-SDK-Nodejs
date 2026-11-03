@@ -2,24 +2,38 @@
 
 [English](release-notes.md) | [简体中文](zh-CN/release-notes.md)
 
-## Unreleased - Facebook
+## 0.5.0 — prepared, unreleased
 
-Adds the facebook provider enum and four typed receiver declarations with eight synthetic examples. The HTTP operation set and 24 standard event names, authentication, retry and MCP policies remain unchanged. Exhaustive provider switches must handle facebook. See [Facebook](facebook.md). No package publication or deployment is implied.
+Prepared on 2026-11-03; this is not a publication date. This pre-1.0 minor version includes breaking response/type changes from `0.4.0`. Read the [migration guide](migration.md) before upgrading.
 
-## Unreleased - public contract synchronization
+### Changes
 
-The working source covers 78 HTTP operations and 24 standard event types, plus the subscription wildcard. No version, tag or registry release is created.
+- Synchronizes 78 HTTP operations, 225 component schemas, 24 standard event names plus `*`, and 40 specialized Webhook receiver declarations. The 57 synthetic examples cover 29 receiver declarations, not all 40.
+- Adds account-operation queries, hosted authorization/Passkey, contacts/membership, on-demand history, posts/comments and gated calls. Account pagination, creation/update inputs, asynchronous deletion, wallet/QR metadata and message/Webhook unions are updated.
+- Adds the `facebook` provider and four receiver declarations with eight examples; Facebook itself adds no HTTP operations or standard event names. Session-only authorization and E2EE direct-message limits are documented in [Facebook](facebook.md).
+- Keeps authentication, credential filtering and the 19-operation retry allowlist. Adds optional validated five-digit `numericCode` error metadata without exposing server bodies. No new automatic write retries or MCP exposure are enabled.
 
-- Adds calls, billing-operation queries, hosted authorization, Passkey, posts/comments, on-demand history and contact creation/membership.
-- Account lists now return `data.items/has_more/next_cursor`. Migrate array consumers and preserve opaque cursors. Creation/update use separate inputs. Optional `Idempotency-Key` is passed through `params.header`; writes remain nonretryable. Deletion returns 202 JSON or 204 with undefined data.
-- Telegram read targets no longer require a WhatsApp sender. Types cover authorization steps, runtime hints, wallet periods, quota usage, independent account endpoints and WhatsApp Protocol.
-- Optional `UnifyPortApiError.numericCode` retains only validated five-digit strings. Raw messages/details remain excluded.
-- Message unions cover sticker/poll/link_preview and member/all mentions. See [Webhook handling](webhook-contract.md) for payloads, sparse updates and ordering.
-- New operations remain outside MCP and automatic retry. POST post/comment queries are reads; hangup is destructive. Authorization/call links and Passkey payloads have secret policies.
-- Compatibility review keeps `DeviceApiOperations` and the `/device` `operations` export HTTP-only. Webhook receiver operations remain available through `DeviceApiWebhooks` / `/device` `webhooks`.
-- Generated types preserve shared fields in alternative payloads, decoded/unavailable vote branches, disabled settings, unpinned snapshots and sparse call-record fields. Webhook examples are now included in generated TypeScript checks.
+### Version and provenance
 
-Account pagination is a breaking response change. Replace the removed `AccountRequest` component with `AccountCreateRequest` or `AccountUpdateRequest` as appropriate. Required creation fields and corrected message/Webhook unions may expose invalid existing calls during type checking. Migrate callers before adopting this source update. Local checks do not prove deployment or real-account workflows.
+The workspace and `packages/sdk/package.json` both declare `0.5.0`. `@unifyport/mcp-server` remains private at `0.1.0`; its version and release policy are independent.
+
+The approved public contract comes from [Node source ce60499](https://github.com/Unify-Port/UnifyPort-SDK-Nodejs/commit/ce60499). Its package metadata was `0.4.0` with baseline kind `approved-source`; that immutable provenance remains unchanged and does not claim npm `0.5.0` has been published.
+
+Supported runtime: Node.js >=22.12.0; ESM only.
+
+### Verification and remaining gates
+
+Run from the source checkout:
+
+```bash
+pnpm check
+pnpm public:check
+git diff --check
+```
+
+Review the exact candidate diff and package/archive contents; install the local artifact into a clean consumer and confirm its version and public imports. These are preparation gates, not a statement that the listed commands or release CI have already passed.
+
+No tag, registry publication, GitHub Release, deployment or real-account E2E is performed by this preparation. CI must pass on the final reviewed release commit. Controlled staging/provider E2E and post-publication registry/module resolution remain separate gates. Re-run time-sensitive vulnerability checks before release. Rollback constraints are documented in the [migration guide](migration.md).
 
 ## 0.4.0 - 2026-07-31
 
